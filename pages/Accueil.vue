@@ -4,9 +4,9 @@
     <v-container fluid class="header full-height">
       <v-row align="center" justify="center" class="full-height">
         <v-col cols="12" md="8" class="text-center">
-          <h1 class="title" data-aos="fade-down">Gestion de Ferme Agricole</h1>
-          <p class="subtitle" data-aos="fade-up">Optimisez votre production végétale avec notre application.</p>
-          <v-btn color="primary" large @click="scrollToSection('services')" data-aos="zoom-in">Découvrez nos services</v-btn>
+          <h1 class="title pa-4" data-aos="fade-down">Gestion de Ferme Agricole</h1>
+          <p class="subtitle pb-8" data-aos="fade-up">Optimisez votre production végétale avec notre application.</p>
+        <v-btn color="primary" class="pb-12  decouvrez"  large @click="scrollToSection('services')" data-aos="zoom-in">Découvrez nos services </v-btn> 
         </v-col>
       </v-row>
     </v-container>
@@ -16,13 +16,13 @@
     <v-row justify="center">
       <v-col cols="12" md="6" lg="4" class="auth-menu-col">
         <v-card class="auth-card" outlined data-aos="fade-right">
-          <v-card-title class="text-center">Bienvenue</v-card-title>
+          <v-card-title class="text-center bien">Bienvenue</v-card-title>
           <v-card-text class="text-center">
             <p class="mt-4 mb-4">
               Pour accéder à toutes les fonctionnalités de notre application, veuillez vous connecter ou vous inscrire.
             </p>
-            <v-btn @click="goToLogin" color="primary" class="my-2" data-aos="fade-up">Se Connecter</v-btn>
-            <v-btn @click="goToRegister" color="secondary" class="my-2 ml-4" data-aos="fade-up">S'inscrire</v-btn>
+            <v-btn @click="goToLogin" color="primary" class="my-2 incon" data-aos="fade-up">Se Connecter</v-btn>
+            <v-btn @click="goToRegister" color="secondary" class="my-2 ml-4 incon" data-aos="fade-up">S'inscrire</v-btn>
           </v-card-text>
         </v-card>
       </v-col>
@@ -35,40 +35,67 @@
         <v-col cols="12" class="text-center">
           <h2 class="section-title" data-aos="fade-down">Nos Services</h2>
         </v-col>
+
         <v-col v-for="(service, index) in services" :key="index" cols="12" md="4">
-          <v-card class="service-card" data-aos="fade-up" :data-aos-delay="index * 100">
-            <v-img :src="service.image" height="300px"></v-img>
-            <v-card-title>{{ service.title }}</v-card-title>
-            <v-card-text>{{ service.description }}</v-card-text>
-          </v-card>
-        </v-col>
+  <v-card 
+    class="service-card pa-16"
+    data-aos="fade-up" 
+    :data-aos-delay="index * 100" 
+    outlined>
+    <v-img :src="service.image" height="300px" class="mx-auto img-with-padding" contain></v-img> <!-- Classe pour image -->
+    <v-card-title class="text-center servititle">{{ service.title }}</v-card-title>
+    <v-card-text class="text-center para">{{ service.description }}</v-card-text>
+  </v-card>
+</v-col>
+
+
       </v-row>
     </v-container>
 
     <!-- Testimonials Section -->
     <v-container class="testimonials-section" fluid>
-      <v-row>
-        <v-col cols="12" class="text-center">
+      <v-row class="pa-4">
+        <v-col cols="12" class="text-center pa-0 mg-0">
           <h2 class="section-title" data-aos="fade-down">Témoignages</h2>
         </v-col>
-        <v-col v-for="(testimonial, index) in testimonials" :key="index" cols="12" md="4">
-          <v-card class="testimonial-card" data-aos="fade-up" :data-aos-delay="index * 100">
-            <v-card-text class="italic">"{{ testimonial.text }}"</v-card-text>
-            <v-card-subtitle class="text-right">{{ testimonial.author }}</v-card-subtitle>
-          </v-card>
-        </v-col>
+       <v-carousel cycle :interval="5000" show-arrows class="pa-0">
+  <v-carousel-item v-for="(testimonial, index) in testimonials" :key="index">
+    <v-card class="testimonial-card rounded-lg pa-0 ml-15 mr-15" data-aos="fade-up" :data-aos-delay="index * 100">
+      <v-card-text class="italic text-center">"{{ testimonial.text }}"</v-card-text>
+      <v-card-subtitle class="text-center pa-0 ma-0">{{ testimonial.author }}</v-card-subtitle>
+    </v-card>
+  </v-carousel-item>
+</v-carousel>
+
+
+
       </v-row>
     </v-container>
 
     <!-- Partners Section -->
     <v-container class="partners-section" fluid>
       <v-row>
-        <v-col cols="12" class="text-center">
+        <v-col cols="12" class="text-center ">
           <h2 class="section-title" data-aos="fade-down">Nos Partenaires</h2>
         </v-col>
-        <v-col v-for="(partner, index) in partners" :key="index" cols="12" md="2">
-          <v-img :src="partner.image" class="partner-logo" contain data-aos="fade-up" :data-aos-delay="index * 100"></v-img>
-        </v-col>
+        <v-row class="d-flex justify-center">
+  <v-col
+    v-for="(partner, index) in partners"
+    :key="index"
+    cols="12"
+    md="3"
+    class="d-flex justify-center pa-10"
+  >
+    <v-img
+      :src="partner.image"
+      class="partner-logo"
+      contain
+      data-aos="fade-up"
+      :data-aos-delay="index * 100"
+    ></v-img>
+  </v-col>
+</v-row>
+
       </v-row>
     </v-container>
 
@@ -127,12 +154,12 @@ const router = useRouter()
 // Données des services
 const services = ref([
   { image: 'pexels-nc-farm-bureau-mark-2252618.jpg', title: 'Gestion des Parcelles', description: 'Optimisez l’utilisation de chaque parcelle de terrain.' },
-  { image: 'pexels-rattasat-1453152-2804327.jpg', title: 'Gestion des Cultures', description: 'Suivez les cultures de la plantation à la récolte.' },
+  { image: 'pexels-rattasat-1453152-2804327.jpg', title: 'Gestion des Cultures', description: 'Suivez les cultures de la plantation à la récolte avec simplicité.' },
   { image: 'pexels-cenali-2733918.jpg', title: 'Gestion des Stocks', description: 'Surveillez et gérez les stocks de produits agricoles.' },
   // Ajoutez plus de services ici
-  { image: 'pexels-nc-farm-bureau-mark-2252618.jpg', title: 'Gestion des Parcelles', description: 'Optimisez l’utilisation de chaque parcelle de terrain.' },
-  { image: 'pexels-rattasat-1453152-2804327.jpg', title: 'Gestion des Cultures', description: 'Suivez les cultures de la plantation à la récolte.' },
-  { image: 'pexels-cenali-2733918.jpg', title: 'Gestion des Stocks', description: 'Surveillez et gérez les stocks de produits agricoles.' },
+  { image: 'pexels-nc-farm-bureau-mark-2252618.jpg', title: 'Comptabilité financière', description: 'Ayez un vu gloabl de vos différentes tansactions financières' },
+  { image: 'pexels-rattasat-1453152-2804327.jpg', title: 'Prévisions météorologiques', description: 'Planifiez vos activités en tenant compte de la méteo' },
+  { image: 'pexels-cenali-2733918.jpg', title: 'Recommandation', description: 'Surveillez les recommandations pour améliorer la productivité' },
   // Ajoutez plus de services ici
 ])
 
@@ -203,21 +230,25 @@ const scrollToSection = (sectionId) => {
 
 /* Section Title */
 .title {
-  font-size: 3em;
+  font-size: 4em;
   font-weight: bold;
   margin-bottom: 20px;
 }
 
 .subtitle {
-  font-size: 1.5em;
+  font-size: 2em;
   margin-bottom: 20px;
 }
-
+.decouvrez {
+  padding: auto;
+  font-size: 1.5em;
+}
 /* Auth Menu Styles */
 .auth-menu {
-  padding: 50px 0;
+  padding: 20px;
   display: flex;
   justify-content: center;
+  
 }
 
 .auth-menu-col {
@@ -225,41 +256,64 @@ const scrollToSection = (sectionId) => {
 }
 
 .auth-card {
-  max-width: 400px;
+  max-width: 100%;
+  max-height: 100%;
+  padding: 0;
 }
-
+.text-center {
+  font-size: 1.5em;
+  padding-top: 5px;
+  
+}
+.bien {
+  font-size: 2.5em;
+  margin: 0;
+  padding: 0;
+}
+.incon {
+  font-size: 1em;
+}
 /* Services Section */
 .services-section {
   background-color: #e8f5e9; /* Vert très clair pour contraste avec le header */
   padding: 50px 0;
 }
-
+.services-card {
+  justify-content: center;
+  
+}
 .section-title {
   font-size: 2.5em;
   font-weight: bold;
   margin-bottom: 30px;
 }
-
+.servititle {
+  padding: auto;
+  font-size: 2em;
+} 
 /* Testimonials Section */
 .testimonials-section {
-  background-color: #c8e6c9; /* Vert clair */
-  padding: 50px 0;
+  background-color: #1b5e20; /* Vert clair */
+  padding:  0;
+  
 }
 
 .testimonial-card {
-  padding: 20px;
+  padding: 20px 20px;
   font-style: italic;
 }
 
 /* Partners Section */
 .partners-section {
-  background-color: #a5d6a7; /* Vert moyen */
+  background-color:#e8f5e9; /* Vert moyen */
   padding: 50px 0;
 }
 
 .partner-logo {
   max-width: 100%;
   height: auto;
+  margin: auto;
+  
 }
 
 /* Footer */
@@ -270,7 +324,7 @@ const scrollToSection = (sectionId) => {
 }
 
 .footer-title {
-  font-size: 1.5em;
+  font-size: 2em;
   margin-bottom: 20px;
 }
 
@@ -282,10 +336,12 @@ const scrollToSection = (sectionId) => {
 
 .footer a:hover {
   text-decoration: underline;
+  color: #15ee1d;
 }
 
 .social-links v-icon {
   color: white;
+  justify-content: space-between;
 }
 
 /* Animations */

@@ -157,6 +157,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
+import { validate as validateUUID } from 'uuid'
+
+const router = useRouter()
+const userId = ref(null)
+
 
 // Fonction de formatage de la date
 function formatDate(dateString) {
@@ -235,8 +240,32 @@ const formattedDepenses = computed(() => {
 
 const fetchRevenus = async () => {
   try {
-    const response = await axios.get('http://localhost:3001/revenus');
-    revenus.value = response.data;
+    const token = localStorage.getItem('authToken')
+
+    if (!token) {
+      router.push('/users/connexion')
+      return
+    }
+
+    const response = await axios.get('http://localhost:3001/api/user-profile', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+
+    const userIdFromServer = response.data.id
+
+    // Vérification et conversion en UUID valide
+    if (!validateUUID(userIdFromServer)) {
+      console.error("ID utilisateur non valide pour UUID:", userIdFromServer)
+      return
+    }
+
+    userId.value = userIdFromServer
+      
+    
+    const Revenusresponse = await axios.get(`http://localhost:3001/revenus/${userId.value}`);
+    revenus.value = Revenusresponse.data;
   } catch (error) {
     console.error('Error fetching revenues:', error);
   }
@@ -244,8 +273,30 @@ const fetchRevenus = async () => {
 
 const fetchDepenses = async () => {
   try {
-    const response = await axios.get('http://localhost:3001/depenses');
-    depenses.value = response.data;
+    const token = localStorage.getItem('authToken')
+
+    if (!token) {
+      router.push('/users/connexion')
+      return
+    }
+
+    const response = await axios.get('http://localhost:3001/api/user-profile', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+
+    const userIdFromServer = response.data.id
+
+    // Vérification et conversion en UUID valide
+    if (!validateUUID(userIdFromServer)) {
+      console.error("ID utilisateur non valide pour UUID:", userIdFromServer)
+      return
+    }
+
+    userId.value = userIdFromServer
+    const Depenseresponse = await axios.get(`http://localhost:3001/depenses/${userId.value}`);
+    depenses.value = Depenseresponse.data;
   } catch (error) {
     console.error('Error fetching expenses:', error);
   }
@@ -262,7 +313,8 @@ const addRevenu = async () => {
     if (editMode.value) {
       await axios.put(`http://localhost:3001/revenus/${revenus.value[editIndex.value].id}`, revenu);
     } else {
-      await axios.post('http://localhost:3001/revenus', revenu);
+      await axios.post(`http://localhost:3001/revenus/${userId.value}`, revenu);
+    
     }
     resetForm();
     await fetchRevenus();
@@ -318,7 +370,7 @@ const addDepense = async () => {
     if (editMode.value) {
       await axios.put(`http://localhost:3001/depenses/${depenses.value[editIndex.value].id}`, depense);
     } else {
-      await axios.post('http://localhost:3001/depenses', depense);
+      await axios.post(`http://localhost:3001/depenses/${userId.value}`, depense);
     }
     resetForm();
     await fetchDepenses();

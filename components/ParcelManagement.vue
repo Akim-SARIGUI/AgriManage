@@ -1,9 +1,9 @@
 <template>
-  <div>
+  <div >
     <!-- Section pour afficher les parcelles -->
-    <v-row>
+    <v-row >
       <v-col cols="12">
-        <v-card class="mt-4">
+        <v-card class="mt-4 ma-15 par elevation-10">
           <v-card-title>
             <h2 class="text-h5">Gestion des Parcelles</h2>
           </v-card-title>
@@ -328,4 +328,7 @@ const closeHistory = () => {
 
 <style scoped>
 /* Ajoutez des styles personnalisés ici si nécessaire */
+.par {
+  
+}
 </style>

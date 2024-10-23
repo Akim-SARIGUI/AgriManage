@@ -43,18 +43,7 @@
                   <v-btn @click="resetPassword" class="forgot-password-btn">Mot de passe oublié?</v-btn>
                 </v-form>
                 <v-divider class="my-4"></v-divider>
-                <v-row>
-                  <v-col class="text-center">
-                    <v-btn @click="loginWithGoogle" color="red" class="social-login-btn">
-                      Se connecter avec Google
-                    </v-btn>
-                  </v-col>
-                  <v-col class="text-center">
-                    <v-btn @click="loginWithFacebook" color="blue" class="social-login-btn">
-                      Se connecter avec Facebook
-                    </v-btn>
-                  </v-col>
-                </v-row>
+               
               </v-card>
             </v-col>
           </v-row>

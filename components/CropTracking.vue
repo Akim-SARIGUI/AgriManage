@@ -113,14 +113,23 @@
               cols="12"
             >
               <v-card class="pa-4">
-                <v-card-title>{{ activity.name }}</v-card-title>
-                <v-card-subtitle>Date : {{ formatDate(activity.date) }}</v-card-subtitle>
-                <v-card-actions>
-                  <v-checkbox v-model="activity.selected" @change="updateIntervention(activity)" label="Intervention" />
-                  <v-btn @click="showEditActivityDialog(activity)" color="blue">Modifier</v-btn>
-                  <v-btn @click="confirmDeleteActivity(activity.id)" color="red">Supprimer</v-btn>
-                </v-card-actions>
-              </v-card>
+  <v-card-title>{{ activity.name }}</v-card-title>
+  <v-card-subtitle>Date : {{ formatDate(activity.date) }}</v-card-subtitle>
+  <v-card-actions>
+    <v-row align="center" justify="space-between">
+      <v-col cols="4">
+        <v-checkbox v-model="activity.selected" @change="updateIntervention(activity)" label="Intervention" />
+      </v-col>
+      <v-col cols="4" class="text-right">
+        <v-btn @click="showEditActivityDialog(activity)" color="blue">Modifier</v-btn>
+      </v-col>
+      <v-col cols="4" class="text-right">
+        <v-btn @click="confirmDeleteActivity(activity.id)" color="red">Supprimer</v-btn>
+      </v-col>
+    </v-row>
+  </v-card-actions>
+</v-card>
+
             </v-col>
           </v-row>
           <v-row v-else>

@@ -1,5 +1,16 @@
 <template>
   <v-app>
+    <!-- Icone de maison en haut à droite -->
+     <v-btn
+    icon
+    class="home-btn animated-button"
+    @click="navigateToHome"
+    elevation="0"
+    @mouseover="hover = true"
+    @mouseleave="hover = false"
+  >
+    <v-icon color="blue darken-2">mdi-home</v-icon>
+  </v-btn>
     <v-container class="d-flex justify-center align-center" fill-height>
       <v-row>
         <v-col class="text-center">
@@ -38,6 +49,9 @@ export default {
     },
     navigateToUser() {
       this.$router.push("/users/connexion");
+    },
+    navigateToHome() {
+      this.$router.push("/"); // Remplacez '/' par l'URL de la page d'accueil
     }
   }
 };
@@ -51,9 +65,10 @@ export default {
   align-items: center;
   height: 100vh;
 }
-h1{
-    font-size: 50px;
+h1 {
+  font-size: 50px;
 }
+
 /* Animation d'apparition pour le titre */
 .animated-title {
   animation: fadeIn 2s ease-in-out;
@@ -69,6 +84,14 @@ h1{
 
 .animated-btn:hover {
   transform: scale(1.1);
+}
+
+/* Icône de maison en haut à droite */
+.home-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  color: blue;
 }
 
 /* Animation d'apparition */
@@ -94,4 +117,5 @@ h1{
     transform: translateY(0);
   }
 }
+
 </style>

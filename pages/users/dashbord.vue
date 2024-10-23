@@ -3,83 +3,65 @@
     <v-navigation-drawer
       app
       v-model="drawer"
-      color="green"
+      color="#1b5e20"
       dark
       width="300"
     >
       <v-list>
-        <v-list-item class="mt-10 align-horizontal" @click="updatePage('dashboard')">
-          <v-list-item-icon class="align-icon">
-            <v-icon>mdi-view-dashboard</v-icon>
-          </v-list-item-icon>
-          <v-list-item-title class="align-title">Tableau de bord</v-list-item-title>
+        <v-list-item class="align-horizontal mt-10" @click="updatePage('dashboard')" >
+         
+          <v-list-item-title class="align-title"> <v-icon left>mdi-view-dashboard</v-icon>Tableau de bord</v-list-item-title>
         </v-list-item>
-        <v-list-item class="align-horizontal" @click="updatePage('parcel-management')">
-          <v-list-item-icon class="align-icon">
-            <v-icon>mdi-map</v-icon>
-          </v-list-item-icon>
-          <v-list-item-title class="align-title">Gestion des parcelles</v-list-item-title>
+
+        <v-list-item @click="updatePage('parcel-management')">
+          
+          <v-list-item-title class="align-title"><v-icon>mdi-map</v-icon> Gestion des parcelles</v-list-item-title>
         </v-list-item>
+
         <v-list-item class="align-horizontal" @click="updatePage('crop-tracking')">
-          <v-list-item-icon class="align-icon">
-            <v-icon>mdi-leaf</v-icon>
-          </v-list-item-icon>
-          <v-list-item-title class="align-title">Suivi des cultures</v-list-item-title>
+          
+          <v-list-item-title class="align-title"> <v-icon>mdi-leaf</v-icon> Suivi des cultures</v-list-item-title>
         </v-list-item>
+
         <v-list-item class="align-horizontal" @click="updatePage('stock-management')">
-          <v-list-item-icon class="align-icon">
-            <v-icon>mdi-package</v-icon>
-          </v-list-item-icon>
-          <v-list-item-title class="align-title">Gestion des stocks</v-list-item-title>
+         
+          <v-list-item-title class="align-title"><v-icon>mdi-package</v-icon> Gestion des stocks</v-list-item-title>
         </v-list-item>
+
         <v-list-item class="align-horizontal" @click="updatePage('weather-forecast')">
-          <v-list-item-icon class="align-icon">
-            <v-icon>mdi-weather-cloudy</v-icon>
-          </v-list-item-icon>
-          <v-list-item-title class="align-title">Prévision météorologiques</v-list-item-title>
+          
+          <v-list-item-title class="align-title"> <v-icon>mdi-weather-cloudy</v-icon> Prévision météorologiques</v-list-item-title>
         </v-list-item>
+
         <v-list-item class="align-horizontal" @click="updatePage('financial-accounting')">
-          <v-list-item-icon class="align-icon">
-            <v-icon>mdi-cash-multiple</v-icon>
-          </v-list-item-icon>
-          <v-list-item-title class="align-title">Comptabilité financière</v-list-item-title>
-        </v-list-item>
-        <v-list-item class="align-horizontal" @click="updatePage('reports')">
-          <v-list-item-icon class="align-icon">
-            <v-icon>mdi-file-chart</v-icon>
-          </v-list-item-icon>
-          <v-list-item-title class="align-title">Rapports</v-list-item-title>
+          <v-list-item-title class="align-title"><v-icon>mdi-cash-multiple</v-icon> Comptabilité financière</v-list-item-title>
         </v-list-item>
 
         <v-list-item class="align-horizontal" @click="updatePage('recommendations')">
-          <v-list-item-icon class="align-icon">
-            <v-icon>mdi-lightbulb-on</v-icon>
-          </v-list-item-icon>
-          <v-list-item-title class="align-title">Recommandations</v-list-item-title>
+         
+          <v-list-item-title class="align-title"><v-icon>mdi-lightbulb-on</v-icon> Recommandations</v-list-item-title>
         </v-list-item>
+
         <v-list-item class="align-horizontal" @click="updatePage('user-profile')">
-          <v-list-item-icon class="align-icon">
-            <v-icon>mdi-account</v-icon>
-          </v-list-item-icon>
-          <v-list-item-title class="align-title">Profil utilisateur</v-list-item-title>
+         
+          <v-list-item-title class="align-title"><v-icon>mdi-account</v-icon> Profil utilisateur</v-list-item-title>
         </v-list-item>
+
         <v-list-item class="align-horizontal" @click="updatePage('support')">
-          <v-list-item-icon class="align-icon">
-            <v-icon>mdi-help-circle</v-icon>
-          </v-list-item-icon>
-          <v-list-item-title class="align-title">Support et aide</v-list-item-title>
+          
+          <v-list-item-title class="align-title"><v-icon>mdi-help-circle</v-icon> Support et aide</v-list-item-title>
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
 
-    <v-app-bar app color="green" dark>
+    <v-app-bar app color="#1b5e20" dark > 
       <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
-      <v-toolbar-title>{{ pageTitle }}</v-toolbar-title>
+      <v-toolbar-title class="agri">AgriManage</v-toolbar-title> <!-- Nom de l'application sur la barre de navigation -->
     </v-app-bar>
 
     <v-main>
       <v-container fluid>
-        <!-- Dynamic Content Section -->
+        <!-- Section dynamique pour les composants -->
         <component :is="currentComponent" />
       </v-container>
     </v-main>
@@ -87,16 +69,15 @@
 </template>
 
 <script setup>
-import { ref, computed ,onMounted} from 'vue'
-
+import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 
-// State for drawer and current page
+// État pour le tiroir et la page actuelle
 const drawer = ref(false)
 const currentPage = ref('dashboard')
 
-// Components for each page
+// Importation des composants
 import Dashboard from '@/components/Dashboard.vue'
 import ParcelManagement from '@/components/ParcelManagement.vue'
 import CropTracking from '@/components/CropTracking.vue'
@@ -108,21 +89,21 @@ import Recommendations from '@/components/Recommendations.vue'
 import UserProfile from '@/components/UserProfile.vue'
 import Support from '@/components/Support.vue'
 
-// Map pages to components
+// Associer les pages aux composants
 const pages = {
   dashboard: Dashboard,
   'parcel-management': ParcelManagement,
   'crop-tracking': CropTracking,
   'stock-management': StockManagement,
   'weather-forecast': WeatherForecast,
-  reports: Reports,
+  'reports': Reports,
   'financial-accounting': FinancialAccounting,
-  recommendations: Recommendations,
+  'recommendations': Recommendations,
   'user-profile': UserProfile,
-  support: Support
+  'support': Support
 }
 
-// Watch for page changes
+// Mettre à jour la page actuelle
 const currentComponent = ref(pages[currentPage.value])
 
 function updatePage(page) {
@@ -130,6 +111,7 @@ function updatePage(page) {
   currentComponent.value = pages[page]
 }
 
+// Titre de la page selon la page sélectionnée
 const pageTitle = computed(() => {
   return {
     dashboard: 'Tableau de bord',
@@ -145,14 +127,14 @@ const pageTitle = computed(() => {
   }[currentPage.value] || 'Tableau de bord'
 })
 
+// Gestion de l'authentification
 const router = useRouter()
 const user = ref(null)
 const error = ref(null)
 
 onMounted(async () => {
   try {
-      const token = localStorage.getItem('authToken')
-    console.log(token)
+    const token = localStorage.getItem('authToken')
     if (!token) {
       router.push('/users/connexion')
       return
@@ -166,7 +148,6 @@ onMounted(async () => {
 
     user.value = response.data
   } catch (err) {
-    console.error('Erreur lors de la récupération des informations de l\'utilisateur:', err)
     error.value = 'Erreur lors de la récupération des informations.'
     router.push('/users/connexion')
   }
@@ -174,7 +155,8 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* Align items horizontally */
+/* Style pour aligner horizontalement les icônes et le texte */
+
 .align-horizontal {
   display: flex;
   align-items: center;
@@ -183,7 +165,9 @@ onMounted(async () => {
 .align-icon {
   margin-right: 16px;
 }
-
+.agri {
+  font-size: 1.8em;
+}
 .align-title {
   flex: 1;
 }

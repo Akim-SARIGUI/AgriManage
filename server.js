@@ -7,8 +7,8 @@ import cors from 'cors';
 import jwt from 'jsonwebtoken'; // Utilisation d'import pour jwt
 import { v4 as uuidv4 } from 'uuid'; // Importation du module pour générer des UUID
 // Importation du module pour générer des UUID
-
-
+import multer from 'multer';
+import path from 'path';
 
 const { Pool } = pg;
 const app = express();
@@ -846,9 +846,10 @@ app.delete('/stocks/:id', async (req, res) => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // GET all revenus
-app.get('/revenus', async (req, res) => {
+app.get('/revenus/:id', async (req, res) => {
+   const { id } = req.params;
   try {
-    const result = await pool.query('SELECT * FROM revenus_');
+    const result = await pool.query('SELECT * FROM revenus_  WHERE user_id = $1' , [id]);
     res.json(result.rows);
   } catch (err) {
     console.error(err);
@@ -857,9 +858,10 @@ app.get('/revenus', async (req, res) => {
 });
 
 // GET all depenses
-app.get('/depenses', async (req, res) => {
+app.get('/depenses/:id', async (req, res) => {
+  const { id } = req.params;
   try {
-    const result = await pool.query('SELECT * FROM depenses_');
+    const result = await pool.query('SELECT * FROM depenses_ WHERE user_id = $1', [id]);
     res.json(result.rows);
   } catch (err) {
     console.error(err);
@@ -868,10 +870,11 @@ app.get('/depenses', async (req, res) => {
 });
 
 // POST ajouter revenu
-app.post('/revenus', async (req, res) => {
+app.post('/revenus/:id', async (req, res) => {
+    const { id } = req.params;
   const { montant, source, date } = req.body;
   try {
-    await pool.query('INSERT INTO revenus_ (montant, source, date) VALUES ($1, $2, $3)', [montant, source, date]);
+    await pool.query('INSERT INTO revenus_ (montant, source, date, user_id) VALUES ($1, $2, $3, $4)', [montant, source, date, id]);
     res.status(201).send('Revenu ajouté');
   } catch (err) {
     console.error(err);
@@ -880,10 +883,11 @@ app.post('/revenus', async (req, res) => {
 });
 
 // POST ajouter depense
-app.post('/depenses', async (req, res) => {
-  const { montant, categorie, date } = req.body;
+app.post('/depenses/:id', async (req, res) => {
+   const { id } = req.params;
+  const { montant, categorie, date} = req.body;
   try {
-    await pool.query('INSERT INTO depenses_ (montant, categorie, date) VALUES ($1, $2, $3)', [montant, categorie, date]);
+    await pool.query('INSERT INTO depenses_ (montant, categorie, date, user_id) VALUES ($1, $2, $3, $4)', [montant, categorie, date, id]);
     res.status(201).send('Dépense ajoutée');
   } catch (err) {
     console.error(err);
@@ -1099,9 +1103,20 @@ app.get('/interventions/:cropId', async (req, res) => {
 });
 
 // Get FAQs
-app.get('/api/faqs', async (req, res) => {
+app.get('/api/contact-support/:id', async (req, res) => {
+  const { id } = req.params;
+
+  // Validate UUID format
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(id)) {
+    return res.status(400).json({ error: 'Invalid ID format' });
+  }
+
   try {
-    const result = await pool.query('SELECT * FROM faqs');
+    const result = await pool.query('SELECT * FROM user_messages WHERE user_id  = $1', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'No message found with this ID' });
+    }
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching FAQs:', error);
@@ -1109,8 +1124,10 @@ app.get('/api/faqs', async (req, res) => {
   }
 });
 
+
 // Post user message
-app.post('/api/contact-support', async (req, res) => {
+app.post('/api/contact-support/:id', async (req, res) => {
+   const { id } = req.params;
   const { name, email, message } = req.body;
 
   if (!name || !email || !message) {
@@ -1119,8 +1136,8 @@ app.post('/api/contact-support', async (req, res) => {
 
   try {
     const result = await pool.query(
-      'INSERT INTO user_messages (name, email, message) VALUES ($1, $2, $3) RETURNING *',
-      [name, email, message]
+      'INSERT INTO user_messages (name, email, message, user_id) VALUES ($1, $2, $3,$4) RETURNING *',
+      [name, email, message,id]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -1202,6 +1219,147 @@ app.delete('/api/users/:id', (req, res) => {
       console.error('Error deleting user:', error);
       res.status(500).json({ error: 'Internal Server Error' });
     });
+});
+
+
+////////////////////////////////////////////////////////////////////////
+
+// Route pour récupérer les informations de l'utilisateur
+app.get('/api/user-profile', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Pour l'exemple, nous supposons que le token est l'ID utilisateur
+    const userId = parseInt(token);
+    if (isNaN(userId)) {
+      return res.status(400).json({ error: 'Invalid token' });
+    }
+
+    const result = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+    if (result.rows.length > 0) {
+      res.json(result.rows[0]);
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+///////////////////////////////////////////////////////////////////////////////@ts-check
+
+// Endpoint to send verification code
+app.post('/api/send-verification-code', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    // Check if email exists in users table
+    const userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Email not found' });
+    }
+
+    // Generate a random reset code
+    const resetCode = crypto.randomBytes(3).toString('hex'); // Generates a random 6-character code
+
+    // Store the reset code in reinitializer table with expiration time
+    const expirationTime = new Date(Date.now() + 15 * 60 * 1000); // Set expiration time to 15 minutes from now
+    await pool.query(
+      'INSERT INTO reinitializer (email, reset_code, expires_at) VALUES ($1, $2, $3)',
+      [email, resetCode, expirationTime]
+    );
+
+    // Send email with nodemailer
+    const transporter = nodemailer.createTransport({
+      service: 'gmail', // Use your email service provider
+      auth: {
+        user: 'your_email@gmail.com',
+        pass: 'your_email_password'
+      }
+    });
+
+    const mailOptions = {
+      from: 'your_email@gmail.com',
+      to: email,
+      subject: 'Password Reset Code',
+      text: `Your password reset code is: ${resetCode}`
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ message: 'Verification code sent to your email!' });
+  } catch (error) {
+    console.error('Error sending verification code:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+// Endpoint to verify the reset code and update password
+app.post('/api/reset-password', async (req, res) => {
+  const { email, resetCode, newPassword } = req.body;
+
+  try {
+    // Check if the reset code is valid and not expired
+    const result = await pool.query(
+      'SELECT * FROM reinitializer WHERE email = $1 AND reset_code = $2 AND expires_at > NOW()',
+      [email, resetCode]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ message: 'Invalid or expired reset code' });
+    }
+
+    // Update user's password in users table (ensure to hash the password)
+    const hashedPassword = await hashPassword(newPassword); // Implement hashPassword function using bcrypt or similar library
+
+    await pool.query(
+      'UPDATE users SET password = $1 WHERE email = $2',
+      [hashedPassword, email]
+    );
+
+    // Optionally delete the used reset code from reinitializer table
+    await pool.query('DELETE FROM reinitializer WHERE email = $1', [email]);
+
+    res.status(200).json({ message: 'Password has been successfully updated!' });
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+// Login endpoint
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    // Find user by email using connection pooling
+    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    
+    if (rows.length === 0) return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+
+    const user = rows[0];
+
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    
+    if (!isPasswordValid) return res.status(401).json({ message: 'Mot de passe incorrect.' });
+
+    // Check role and generate token
+    if (user.role === 'admin') {
+      const token = jwt.sign({ id: user.id }, 'your_jwt_secret', { expiresIn: '24h' });
+      return res.json({ token, user });
+    } else {
+      return res.status(403).json({ message: 'Vous n\'êtes pas admin.' });
+    }
+    
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Erreur interne du serveur.' });
+  }
 });
 
 

@@ -77,6 +77,7 @@
     </transition>
   </div>
 </template>
+
 <script>
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -115,41 +116,27 @@ export default {
   },
   methods: {
     async fetchData() {
-      // Récupérer les rendements des cultures
+      // Récupérer les données des différentes sections
       const cropsResponse = await fetch('http://localhost:3001/api/crops');
-      const cropsData = await cropsResponse.json();
-      this.cropYields = cropsData.map(crop => ({
-        name: crop.name,
-        amount: this.calculateYield(crop.id), // Exemple de fonction pour calculer le rendement
-        planting_date: crop.planting_date,
-        harvest_date: crop.harvest_date
-      }));
+      this.cropYields = await cropsResponse.json();
 
-      // Récupérer les stocks
       const stocksResponse = await fetch('http://localhost:3001/api/stocks');
       this.stocks = await stocksResponse.json();
 
-      // Récupérer les activités
       const activitiesResponse = await fetch('http://localhost:3001/activities');
       this.activities = await activitiesResponse.json();
 
-      // Récupérer les finances
       const financialsResponse = await fetch('http://localhost:3001/api/financials');
       const financials = await financialsResponse.json();
       this.totalRevenues = financials.totalRevenues;
       this.totalExpenses = financials.totalExpenses;
       this.netBalance = this.totalRevenues - this.totalExpenses;
     },
-    calculateYield(cropId) {
-      // Logique pour calculer le rendement basé sur l'ID de la culture
-      // Cela pourrait impliquer des calculs basés sur les données des tables
-      return Math.random() * 1000; // Valeur fictive pour l'exemple
-    },
     generatePDF(reportType) {
       const doc = new jsPDF();
       doc.text('Rapport Complet de la Ferme', 14, 20);
 
-      // Rapport Financier
+      // Ajout des sections dans le PDF
       doc.text('Rapport Financier', 14, 30);
       doc.autoTable({
         head: [['Section', 'Détail']],
@@ -157,54 +144,7 @@ export default {
           ['Revenus Totaux', `${this.totalRevenues} €`],
           ['Dépenses Totales', `${this.totalExpenses} €`],
           ['Solde Net', `${this.netBalance} €`]
-        ],
-        startY: 40
-      });
-
-      // Rendements des Cultures
-      doc.text('Rendements des Cultures', 14, doc.autoTable.previous.finalY + 20);
-      doc.autoTable({
-        head: [['Culture', 'Rendement (kg)', 'Date de Plantation', 'Date de Récolte']],
-        body: this.cropYields.map(item => [item.name, item.amount, item.planting_date, item.harvest_date]),
-        startY: doc.autoTable.previous.finalY + 10
-      });
-
-      // Stocks Disponibles
-      doc.text('Stocks Disponibles', 14, doc.autoTable.previous.finalY + 20);
-      doc.autoTable({
-        head: [['Produit', 'Quantité (unités)', 'Unité']],
-        body: this.stocks.map(item => [item.name, item.quantity, item.unit]),
-        startY: doc.autoTable.previous.finalY + 10
-      });
-
-      // Activités et Planification
-      doc.text('Activités et Planification', 14, doc.autoTable.previous.finalY + 20);
-      doc.autoTable({
-        head: [['Activité', 'Date', 'Détails']],
-        body: this.activities.map(item => [item.name, item.date, item.details]),
-        startY: doc.autoTable.previous.finalY + 10
-      });
-
-      // Conditions Météorologiques
-      doc.text('Conditions Météorologiques', 14, doc.autoTable.previous.finalY + 20);
-      doc.autoTable({
-        head: [['Condition', 'Détail']],
-        body: [
-          ['Prévisions Actuelles', this.currentWeather],
-          ['Historique', this.historicalWeather]
-        ],
-        startY: doc.autoTable.previous.finalY + 10
-      });
-
-      // Analyse des Données
-      doc.text('Analyse des Données', 14, doc.autoTable.previous.finalY + 20);
-      doc.autoTable({
-        head: [['Type', 'Détail']],
-        body: [
-          ['Tendances', this.trends],
-          ['Comparaison', this.comparisons]
-        ],
-        startY: doc.autoTable.previous.finalY + 10
+        ]
       });
 
       doc.save('rapport_complet.pdf');

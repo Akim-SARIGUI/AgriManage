@@ -4,9 +4,10 @@
       <v-col cols="12">
         <h1>Gestion des Utilisateurs</h1>
         <v-btn color="success" @click="openAddUserDialog">Ajouter un utilisateur</v-btn>
+        <v-btn color="blue" @click="openAddAdminDialog" class="ml-4">Ajouter un admin</v-btn>
         <v-data-table :headers="headers" :items="users" class="elevation-1">
           <template v-slot:item.actions="{ item }">
-            <v-btn  color="primary" @click="viewUser(item)">Voir</v-btn>
+            <v-btn color="primary" @click="viewUser(item)">Voir</v-btn>
             <v-btn class="ml-5" color="warning" @click="openEditUserDialog(item)">Modifier</v-btn>
             <v-btn class="ml-5" color="red" @click="deleteUser(item)">Supprimer</v-btn>
           </template>
@@ -67,10 +68,12 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
   </v-container>
 </template>
 
 <script>
+// Import axios for API calls
 import axios from 'axios';
 
 export default {
@@ -108,27 +111,31 @@ export default {
       }
     },
     openAddUserDialog() {
-      this.newUser = { full_name: '', email: '', role: '', password: '' }; // Réinitialiser le formulaire
+      this.newUser = { full_name: '', email: '', role: '', password: '' }; // Reset form for regular user
       this.addUserDialog = true;
+    },
+    openAddAdminDialog() {
+      this.newUser = { full_name: '', email: '', role: 'admin', password: '' }; // Set role to admin
+      this.addUserDialog = true; // Open dialog for adding user
     },
     async addUser() {
       try {
         await axios.post('http://localhost:3001/api/users', this.newUser);
-        this.fetchUsers(); // Recharger la liste des utilisateurs
-        this.addUserDialog = false; // Fermer le dialogue
+        this.fetchUsers(); // Reload users list
+        this.addUserDialog = false; // Close dialog
       } catch (error) {
         console.error('Erreur lors de l\'ajout de l\'utilisateur:', error);
       }
     },
     openEditUserDialog(user) {
-      this.selectedUser = { ...user }; // Créer une copie de l'utilisateur sélectionné
+      this.selectedUser = { ...user }; // Create a copy of the selected user
       this.editUserDialog = true;
     },
     async updateUser() {
       try {
         await axios.put(`http://localhost:3001/api/users/${this.selectedUser.id}`, this.selectedUser);
-        this.fetchUsers(); // Recharger la liste des utilisateurs
-        this.editUserDialog = false; // Fermer le dialogue
+        this.fetchUsers(); // Reload users list
+        this.editUserDialog = false; // Close dialog
       } catch (error) {
         console.error('Erreur lors de la mise à jour de l\'utilisateur:', error);
       }
@@ -138,24 +145,24 @@ export default {
       if (confirmDelete) {
         try {
           await axios.delete(`http://localhost:3001/api/users/${user.id}`);
-          this.fetchUsers(); // Recharger la liste des utilisateurs
+          this.fetchUsers(); // Reload users list
         } catch (error) {
           console.error('Erreur lors de la suppression de l\'utilisateur:', error);
         }
       }
     },
     viewUser(user) {
-      this.selectedUser = user; // Assignation de l'utilisateur sélectionné
-      this.viewUserDialog = true; // Ouvrir le dialogue de vue
+      this.selectedUser = user; // Assign selected user
+      this.viewUserDialog = true; // Open view dialog
     },
     closeAddUserDialog() {
-      this.addUserDialog = false; // Fermer le dialogue d'ajout
+      this.addUserDialog = false; // Close add dialog
     },
     closeEditUserDialog() {
-      this.editUserDialog = false; // Fermer le dialogue de modification
+      this.editUserDialog = false; // Close edit dialog
     },
     closeViewUserDialog() {
-      this.viewUserDialog = false; // Fermer le dialogue de vue
+      this.viewUserDialog = false; // Close view dialog
     },
   },
 };
@@ -164,3 +171,4 @@ export default {
 <style scoped>
 /* Styles pour le tableau des utilisateurs */
 </style>
+

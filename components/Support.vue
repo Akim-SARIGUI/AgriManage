@@ -1,133 +1,200 @@
 <template>
-  <v-app>
-    <v-container fluid>
-      <!-- FAQ Section -->
-      <v-row>
-        <v-col cols="12" md="8" offset-md="2">
-          <v-card outlined>
-            <v-card-title>
-              <v-icon left>mdi-help-circle</v-icon> FAQ
-            </v-card-title>
-            <v-card-text>
-              <v-expansion-panels>
-                <v-expansion-panel v-for="(item, index) in faqs" :key="index">
-                  <v-expansion-panel-header>{{ item.question }}</v-expansion-panel-header>
-                  <v-expansion-panel-content>{{ item.answer }}</v-expansion-panel-content>
-                </v-expansion-panel>
-              </v-expansion-panels>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
+  <v-container fluid class="contact-form">
+    <v-card>
+      <v-card-title>
+        <h1>Contactez l'Administrateur</h1>
+      </v-card-title>
+      <v-card-text>
+        <v-form @submit.prevent="submitForm">
+          <v-text-field
+            v-model="form.name"
+            label="Nom"
+            required
+            outlined
+          ></v-text-field>
+          <v-text-field
+            v-model="form.email"
+            label="Email"
+            required
+            outlined
+            type="email"
+          ></v-text-field>
+          <v-textarea
+            v-model="form.message"
+            label="Message"
+            required
+            outlined
+          ></v-textarea>
+          <v-btn type="submit" color="primary">Envoyer</v-btn>
+        </v-form>
 
-      <!-- Contact Support Section -->
-      <v-row class="mt-4">
-        <v-col cols="12" md="8" offset-md="2">
-          <v-card outlined>
-            <v-card-title>
-              <v-icon left>mdi-email</v-icon> Contactez le Support
-            </v-card-title>
-            <v-card-text>
-              <v-form ref="contactForm">
-                <v-text-field
-                  v-model="contact.name"
-                  label="Nom"
-                  :rules="nameRules"
-                  outlined
-                  class="mb-4"
-                ></v-text-field>
-                <v-text-field
-                  v-model="contact.email"
-                  label="Email"
-                  :rules="emailRules"
-                  outlined
-                  class="mb-4"
-                ></v-text-field>
-                <v-textarea
-                  v-model="contact.message"
-                  label="Message"
-                  :rules="messageRules"
-                  outlined
-                  class="mb-4"
-                ></v-textarea>
-                <v-btn @click="sendMessage" color="primary" class="animated-button">
-                  Envoyer le Message
-                </v-btn>
-              </v-form>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
-    </v-container>
-  </v-app>
+        <!-- Animation pour le message de succès -->
+        <transition name="fade">
+          <p v-if="successMessage" class="success">{{ successMessage }}</p>
+        </transition>
+
+        <!-- Animation pour le message d'erreur -->
+        <transition name="fade">
+          <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+        </transition>
+      </v-card-text>
+    </v-card>
+
+    <v-card class="mt-4">
+      <v-card-title>
+        <h2>Messages Envoyés</h2>
+      </v-card-title>
+      <v-list>
+        <v-list-item-group>
+          <v-list-item v-for="msg in messages" :key="msg.id">
+            <!-- Chaque message dans une V-Card -->
+            <v-card class="message-card" outlined>
+              <v-card-title>{{ formatDate(msg.created_at) }} - {{ msg.name }}</v-card-title>
+              <v-card-subtitle>{{ msg.message }}</v-card-subtitle>
+            </v-card>
+          </v-list-item>
+        </v-list-item-group>
+      </v-list>
+    </v-card>
+  </v-container>
 </template>
 
-<script>
-import axios from 'axios'; // Import axios
+<script setup>
+// Importing necessary libraries and functions
+import { ref, onMounted } from 'vue';
+import axios from 'axios';
+import { validate as validateUUID } from 'uuid';
+import { useRouter } from 'vue-router'; // Ensure you import useRouter
 
-export default {
-  data() {
-    return {
-      faqs: [],
-      contact: {
-        name: '',
-        email: '',
-        message: ''
-      },
-      nameRules: [v => !!v || 'Le nom est requis'],
-      emailRules: [v => /.+@.+\..+/.test(v) || 'L\'email doit être valide'],
-      messageRules: [v => !!v || 'Le message est requis']
-    };
-  },
-  async mounted() {
-    await this.fetchFAQs();
-  },
-  methods: {
-    async fetchFAQs() {
-      try {
-        const response = await axios.get('http://localhost:3001/api/faqs'); // Using Axios
-        this.faqs = response.data;
-      } catch (error) {
-        console.error('Erreur lors de la récupération des FAQs:', error);
-        alert('Erreur lors de la récupération des FAQs. Veuillez réessayer plus tard.');
-      }
-    },
-    async sendMessage() {
-      if (!this.$refs.contactForm.validate()) {
-        return;
-      }
+const router = useRouter();
+const userId = ref(null);
 
-      try {
-        const response = await axios.post('http://localhost:3001/api/contact-support', this.contact); // Using Axios
+// Reactive references for form data, messages, and feedback messages
+const form = ref({
+  name: '',
+  email: '',
+  message: '',
+});
+const successMessage = ref('');
+const errorMessage = ref('');
+const messages = ref([]);
 
-        if (response.status === 200) {
-          alert('Votre message a été envoyé avec succès');
-          this.contact = { name: '', email: '', message: '' }; // Clear the form
-        }
-      } catch (error) {
-        console.error('Erreur lors de l\'envoi du message:', error);
-        alert(`Erreur: ${error.message}`);
-      }
+// Function to format date
+const formatDate = (dateString) => {
+  const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+  return new Intl.DateTimeFormat('fr-FR', options).format(new Date(dateString));
+};
+
+// Function to submit the contact form
+const submitForm = async () => {
+  try {
+    const token = localStorage.getItem('authToken');
+
+    if (!token) {
+      window.location.href = '/users/connexion'; // Redirect if no token found
+      return;
     }
+
+    // Fetch user profile to get user ID
+    const response = await axios.get('http://localhost:3001/api/user-profile', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const userIdFromServer = response.data.id;
+
+    // Validate user ID
+    if (!validateUUID(userIdFromServer)) {
+      console.error("ID utilisateur non valide pour UUID:", userIdFromServer);
+      return;
+    }
+
+    // Send message with user ID
+    await axios.post(`http://localhost:3001/api/contact-support/${userIdFromServer}`, form.value);
+
+    successMessage.value = 'Votre message a été envoyé avec succès!';
+    errorMessage.value = '';
+
+    // Reset form fields
+    form.value.name = '';
+    form.value.email = '';
+    form.value.message = '';
+
+    await fetchMessages(); // Fetch messages after sending
+  } catch (error) {
+    console.error('Erreur lors de l\'envoi du message:', error);
+    errorMessage.value = 'Erreur lors de l\'envoi du message. Veuillez réessayer.';
   }
 };
+
+// Function to fetch sent messages
+const fetchMessages = async () => {
+  try {
+   const token = localStorage.getItem('authToken')
+
+    if (!token) {
+      router.push('/users/connexion')
+      return;
+    }
+
+    const response = await axios.get('http://localhost:3001/api/user-profile', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const userIdFromServer = response.data.id;
+
+    // Vérification et conversion en UUID valide
+    if (!validateUUID(userIdFromServer)) {
+      console.error("ID utilisateur non valide pour UUID:", userIdFromServer);
+      return;
+    }
+
+    userId.value = userIdFromServer;
+      
+     // Fetch sent messages using the valid user ID
+     const Envoyeresponse = await axios.get(`http://localhost:3001/api/contact-support/${userId.value}`);
+     
+     messages.value = Envoyeresponse.data; // Store fetched messages in the reactive reference
+   } catch (error) {
+     console.error('Erreur lors de la récupération des messages:', error);
+   }
+};
+
+// Lifecycle hook to fetch messages when component is mounted
+onMounted(() => {
+  fetchMessages(); // Load messages on component mount
+});
 </script>
 
 <style scoped>
-.animated-button {
-  transition: all 0.3s ease;
+.contact-form {
+  max-width: 100%; /* Utiliser toute la largeur */
+  margin: auto;
 }
 
-.animated-button:hover {
-  transform: scale(1.05);
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+.success {
+  color: green;
+  font-weight: bold;
 }
 
-.mb-4 {
-  margin-bottom: 16px;
+.error {
+  color: red;
+  font-weight: bold;
 }
 
-.mt-4 {
-  margin-top: 16px;
+/* Styles pour les cartes de messages */
+.message-card {
+  margin-bottom: 15px; /* Espacement entre les cartes */
+}
+
+/* Animation de fondu */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity .5s;
+}
+.fade-enter, .fade-leave-to /* .fade-leave-active in <2.1.8 */ {
+  opacity: 0;
 }
 </style>
