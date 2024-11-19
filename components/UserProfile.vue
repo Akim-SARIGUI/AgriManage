@@ -1,15 +1,19 @@
 <template>
   <div class="profile-container">
-    <div class="profile-header">
-      <div class="profile-info">
-        <h1 class="text-3xl font-extrabold text-green-600">{{ user.full_name }}</h1>
-        <p class="text-lg text-gray-700">{{ user.email }}</p>
-      </div>
-    </div>
+    <div class="profile-header p-6 bg-white shadow-lg rounded-lg flex items-center space-x-6">
+  <div class="profile-info">
+    <!-- Nom de l'utilisateur avec une taille et un style plus audacieux -->
+    <h1 class="text-4xl font-bold text-green-600 leading-tight text-h5">{{ user.full_name }}</h1>
+    
+    <!-- Email de l'utilisateur avec un style plus discret -->
+    <p class="text-lg text-gray-500 mt-1 ">{{ user.email }}</p>
+  </div>
+</div>
+
 
     <div class="profile-content">
       <v-card class="profile-card">
-        <v-card-title class="bg-green-50 text-green-700">Informations Personnelles</v-card-title>
+        <v-card-title class="bg-green-50 text-green-700 text-h4">Informations Personnelles</v-card-title>
         <v-card-subtitle class="p-4">
           <div class="flex flex-col">
             <div class="mb-2"><strong>Nom :</strong> {{ user.full_name }}</div>
@@ -18,38 +22,28 @@
         </v-card-subtitle>
       </v-card>
 
-      <!-- Hidden file input for photo selection -->
-      <input type="file" ref="fileInput" @change="changePhoto" style="display: none" />
+<v-card class="profile-card pa-4 elevation-4">
+  <v-card-title class="bg-green-50 text-green-700 text-h4">Paramètres</v-card-title>
+  
+  <v-card-text class="d-flex flex-column align-start">
+    <!-- Boutons empilés verticalement avec des marges pour espacer -->
+    <v-btn @click="resetPassword" color="green" class="mb-3">
+      Changer le Mot de Passe
+    </v-btn>
+    
+    <v-btn color="blue" @click="openEditUserDialog" class="mb-3">
+      Modifier mes données
+    </v-btn>
+    
+    <v-btn @click="logout" class="btn-red">
+      Déconnexion
+    </v-btn>
+  </v-card-text>
+</v-card>
 
-      <v-card class="profile-card">
-        <v-card-title class="bg-green-50 text-green-700">Paramètres de Sécurité</v-card-title>
-        <!-- Updated button to call resetPassword function -->
-        <v-btn @click="resetPassword" color="green" class="ml-4 mb-4 mt-4">Changer le Mot de Passe</v-btn>
-        <v-btn color="blue" @click="openEditUserDialog" class="mt-4 ml-4 mb-4">Modifier mes données</v-btn>
-      </v-card>
 
-      <v-btn @click="logout" class="btn-red">Déconnexion</v-btn>
-      <v-btn @click="openDialog" class="ml-5" color="primary">Voir les Rapports</v-btn>
+
     </div>
-
-    <!-- Alert Dialog -->
-    <v-dialog v-model="dialog" max-width="500px">
-      <v-card>
-        <v-card-title>
-          <span class="headline">Alerte</span>
-        </v-card-title>
-        <v-card-text>
-          <p>
-            Pour voir vos rapports, vous devez finir votre saison de culture. 
-            Référez-vous aux autres interfaces pour plus d'informations.
-          </p>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="primary" @click="closeDialog">Fermer</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
 
     <!-- Edit User Dialog -->
     <v-dialog v-model="editUserDialog" max-width="600px">

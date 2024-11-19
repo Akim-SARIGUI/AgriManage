@@ -34,7 +34,6 @@
                   <v-card class="pa-4">
                     <v-card-title>{{ crop.name }}</v-card-title>
                     <v-card-subtitle>Date de plantation : {{ formatDate(crop.planting_date) }}</v-card-subtitle>
-                    <v-card-subtitle>Date de récolte : {{ crop.harvest_date ? formatDate(crop.harvest_date) : 'Non défini' }}</v-card-subtitle>
                     <v-card-actions>
                       <v-btn @click="showEditCropDialog(crop)" color="blue">
                         Modifier

@@ -1,33 +1,33 @@
 <template>
   <v-app>
     <!-- Barre latérale de navigation -->
-    <v-navigation-drawer app v-model="drawer" color="green lighten-4" dark>
+    <v-navigation-drawer app v-model="drawer" style="background-color: #1b5e20;" dark>
       <v-list dense>
         <v-list-item>
           <v-list-item-content>
-            <v-list-item-title class="text-h5">Admin Panel</v-list-item-title>
+            <v-list-item-title class="text-h4">Admin Panel</v-list-item-title>
           </v-list-item-content>
         </v-list-item>
 
         <!-- Gestion des utilisateurs -->
         <v-list-item @click="showSection('users')">
           <v-list-item-content>
-            <v-list-item-title>Gestion des Utilisateurs</v-list-item-title>
+            <v-list-item-title class="lat">Gestion des Utilisateurs</v-list-item-title>
           </v-list-item-content>
         </v-list-item>
 
         <!-- Requêtes des utilisateurs -->
         <v-list-item @click="showSection('requests')">
           <v-list-item-content>
-            <v-list-item-title>Requêtes des Utilisateurs</v-list-item-title>
+            <v-list-item-title class="lat">Requêtes des Utilisateurs</v-list-item-title>
           </v-list-item-content>
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
 
     <!-- Barre d'application -->
-    <v-app-bar app color="green darken-2" dark>
-      <v-toolbar-title>Administration - Gestion de la Ferme</v-toolbar-title>
+    <v-app-bar app style="background-color: #1b5e20;" dark>
+      <v-toolbar-title class="lat">Administration - Gestion de la Ferme</v-toolbar-title>
     </v-app-bar>
 
     <!-- Contenu principal -->
@@ -42,8 +42,8 @@
     </v-main>
 
     <!-- Pied de page -->
-    <v-footer app color="green darken-2" dark>
-      <span class="white--text">&copy; 2024 Gestion de Ferme Agricole</span>
+    <v-footer app style="background-color: #1b5e20;" dark>
+      <span class="white--text lat">&copy; 2024 Gestion de Ferme Agricole</span>
     </v-footer>
   </v-app>
 </template>
@@ -74,7 +74,10 @@ export default {
 
 <style scoped>
 /* Styles personnalisés pour l'interface admin */
-.text-h5 {
+.text-h4 {
   color: white;
+}
+.lat {
+  color:  white;
 }
 </style>

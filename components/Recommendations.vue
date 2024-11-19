@@ -4,7 +4,7 @@
       <!-- Header Section -->
       <v-row class="my-6">
         <v-col cols="12">
-          <v-card class="pa-6" outlined>
+          <v-card class="pa-6 elevation-5" outlined>
             <v-card-title>
               <v-icon left color="primary">mdi-information-outline</v-icon>
               <span class="headline">Guide Complet des Bonnes Pratiques Agricoles</span>
@@ -22,7 +22,7 @@
       <!-- Detailed Recommendations Section -->
       <v-row class="my-6">
         <v-col cols="12">
-          <v-card class="pa-6 animated-section" outlined>
+          <v-card class="pa-6 elevation-5 animated-section" outlined>
             <v-card-title>
               <v-icon left color="green">mdi-leaf</v-icon>
               <span class="headline">1. Choix des Cultures Appropriées</span>
@@ -41,7 +41,7 @@
 
       <v-row class="my-6">
         <v-col cols="12">
-          <v-card class="pa-6 animated-section" outlined>
+          <v-card class="pa-6 elevation-5 animated-section" outlined>
             <v-card-title>
               <v-icon left color="blue">mdi-water</v-icon>
               <span class="headline">2. Techniques d’Irrigation Modernes</span>
@@ -60,7 +60,7 @@
 
       <v-row class="my-6">
         <v-col cols="12">
-          <v-card class="pa-6 animated-section" outlined>
+          <v-card class="pa-6 elevation-5 animated-section" outlined>
             <v-card-title>
               <v-icon left color="brown">mdi-soil</v-icon>
               <span class="headline">3. Amélioration et Gestion des Sols</span>
@@ -79,7 +79,7 @@
 
       <v-row class="my-6">
         <v-col cols="12">
-          <v-card class="pa-6 animated-section" outlined>
+          <v-card class="pa-6 elevation-5 animated-section" outlined>
             <v-card-title>
               <v-icon left color="orange">mdi-seed</v-icon>
               <span class="headline">4. Choix des Semences Certifiées</span>
@@ -98,7 +98,7 @@
 
       <v-row class="my-6">
         <v-col cols="12">
-          <v-card class="pa-6 animated-section" outlined>
+          <v-card class="pa-6 elevation-5 animated-section" outlined>
             <v-card-title>
               <v-icon left color="yellow">mdi-plant</v-icon>
               <span class="headline">5. Profondeur Optimale de Plantation</span>
@@ -117,7 +117,7 @@
 
       <v-row class="my-6">
         <v-col cols="12">
-          <v-card class="pa-6 animated-section" outlined>
+          <v-card class="pa-6 elevation-5 animated-section" outlined>
             <v-card-title>
               <v-icon left color="red">mdi-fertilizer</v-icon>
               <span class="headline">6. Application Raisonnée de Fertilisants</span>
@@ -136,7 +136,7 @@
 
       <v-row class="my-6">
         <v-col cols="12">
-          <v-card class="pa-6 animated-section" outlined>
+          <v-card class="pa-6 elevation-5 animated-section" outlined>
             <v-card-title>
               <v-icon left color="purple">mdi-chemistry</v-icon>
               <span class="headline">7. Utilisation d’Engrais à Libération Contrôlée</span>
@@ -155,7 +155,7 @@
 
       <v-row class="my-6">
         <v-col cols="12">
-          <v-card class="pa-6 animated-section" outlined>
+          <v-card class="pa-6 elevation-5 animated-section" outlined>
             <v-card-title>
               <v-icon left color="grey">mdi-calendar</v-icon>
               <span class="headline">8. Planification des Travaux</span>
@@ -174,7 +174,7 @@
 
       <v-row class="my-6">
         <v-col cols="12">
-          <v-card class="pa-6 animated-section" outlined>
+          <v-card class="pa-6 elevation-5 animated-section" outlined>
             <v-card-title>
               <v-icon left color="teal">mdi-chart-line</v-icon>
               <span class="headline">9. Suivi et Analyse des Performances</span>
@@ -193,7 +193,7 @@
 
       <v-row class="my-6">
         <v-col cols="12">
-          <v-card class="pa-6 animated-section" outlined>
+          <v-card class="pa-6 elevation-5 animated-section" outlined>
             <v-card-title>
               <v-icon left color="pink">mdi-cogs</v-icon>
               <span class="headline">10. Maintenance des Équipements</span>

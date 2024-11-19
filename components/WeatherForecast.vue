@@ -158,7 +158,7 @@ export default {
 }
 
 .v-card-title {
-  background: green;
+  background: #1b5e20;
   color: white;
 }
 

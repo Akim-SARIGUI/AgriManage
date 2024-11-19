@@ -40,22 +40,29 @@
       </v-card-text>
     </v-card>
 
-    <v-card class="mt-4">
-      <v-card-title>
-        <h2>Messages Envoyés</h2>
-      </v-card-title>
-      <v-list>
-        <v-list-item-group>
-          <v-list-item v-for="msg in messages" :key="msg.id">
-            <!-- Chaque message dans une V-Card -->
-            <v-card class="message-card" outlined>
-              <v-card-title>{{ formatDate(msg.created_at) }} - {{ msg.name }}</v-card-title>
-              <v-card-subtitle>{{ msg.message }}</v-card-subtitle>
-            </v-card>
-          </v-list-item>
-        </v-list-item-group>
-      </v-list>
-    </v-card>
+   <v-card class="mt-8 p-4 bg-light-green-50 shadow-lg rounded-lg">
+  <v-card-title>
+    <h2 class="text-xl font-bold text-green-700">Messages Envoyés</h2>
+  </v-card-title>
+
+  <!-- Liste des messages avec espacement et bordures douces -->
+  <v-list>
+    <v-list-item-group>
+      <v-list-item v-for="msg in messages" :key="msg.id">
+        <!-- Ajout d'une ombre, bordures douces et espacement pour chaque message -->
+        <v-card class="message-card mb-4 p-4 rounded-lg shadow-md border border-gray-200 bg-white" outlined>
+          <v-card-title class="text-lg font-semibold text-green-600">
+            {{ formatDate(msg.created_at) }} - {{ msg.name }}
+          </v-card-title>
+          <v-card-subtitle class="text-gray-700">
+            {{ msg.message }}
+          </v-card-subtitle>
+        </v-card>
+      </v-list-item>
+    </v-list-item-group>
+  </v-list>
+</v-card>
+
   </v-container>
 </template>
 

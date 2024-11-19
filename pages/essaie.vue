@@ -1,154 +1,152 @@
 <template>
-  <div class="profile-container">
-    <div class="profile-header">
-      <v-avatar size="100" class="profile-avatar">
-        <img :src="user.avatarUrl" alt="Profile Picture" />
-      </v-avatar>
-      <div class="profile-info">
-        <h1 class="text-3xl font-extrabold text-green-600">{{ user.full_name }}</h1>
-        <p class="text-lg text-gray-700">{{ user.email }}</p>
-      </div>
-    </div>
+  <v-card>
+    <v-card-title>Gestion des Fertilisants</v-card-title>
 
-    <div class="profile-content">
-      <v-card class="profile-card">
-        <v-card-title class="bg-green-50 text-green-700">Informations Personnelles</v-card-title>
-        <v-card-subtitle class="p-4">
-          <div class="flex flex-col">
-            <div class="mb-2"><strong>Nom :</strong>  {{ user.full_name }}</div>
-            <div class="mb-2"><strong>Email :</strong> {{ user.email }}</div>
-            <div class="mb-2"><strong>Téléphone :</strong> {{ user.phone }}</div>
-            <div class="mb-2"><strong>Adresse :</strong> {{ user.address }}</div>
-          </div>
-        </v-card-subtitle>
-      </v-card>
+    <!-- Champ de Recherche -->
+    <v-text-field v-model="search" label="Rechercher un fertilisant" />
 
-      <v-card class="profile-card">
-        <v-card-title class="bg-green-50 text-green-700">Statistiques de l'Utilisateur</v-card-title>
-        <v-card-subtitle class="p-4">
-          <div class="flex flex-col">
-            <div class="mb-2"><strong>Parcelles Gérées :</strong> {{ user.parcelsManaged }}</div>
-            <div class="mb-2"><strong>Nombre de Cultures :</strong> {{ user.cropsCount }}</div>
-            <div class="mb-2"><strong>Stocks Actuels :</strong> {{ user.currentStock }}</div>
-          </div>
-        </v-card-subtitle>
-      </v-card>
+    <!-- Tableau des Fertilisants -->
+    <v-data-table
+      :items="sortedFertilizers"
+      :headers="headers"
+      item-key="id"
+      class="elevation-1"
+    >
+      <template v-slot:item.actions="{ item }">
+        <v-btn small @click="handleEntry(item)">Ajouter Quantité</v-btn>
+        <v-btn small @click="handleExit(item)">Retirer Quantité</v-btn>
+      </template>
+    </v-data-table>
 
-      <v-card class="profile-card">
-        <v-card-title class="bg-green-50 text-green-700">Paramètres de Sécurité</v-card-title>
-        <v-card-subtitle class="p-4">
-          <v-btn @click="changePassword" class="btn-green">Changer le Mot de Passe</v-btn>
-        </v-card-subtitle>
-      </v-card>
+    <!-- Formulaire d'Ajout/Modification de Fertilisant -->
+    <v-form @submit.prevent="saveFertilizer">
+      <v-text-field v-model="newFertilizer.name" label="Nom du fertilisant" required />
+      <v-text-field v-model="newFertilizer.quantity" label="Quantité" type="number" min="1" required />
+      <v-text-field v-model="newFertilizer.unit" label="Unité" required />
 
-      <v-btn @click="logout" class="btn-red">Déconnexion</v-btn>
-    </div>
-  </div>
+      <v-alert v-if="alerts.duplicate" type="error">Ce fertilisant existe déjà. Utilisez 'Ajouter Quantité' ou 'Retirer Quantité'.</v-alert>
+      <v-alert v-if="alerts.success" type="success">Fertilisation ajoutée/modifiée avec succès.</v-alert>
+
+      <v-btn type="submit">Sauvegarder</v-btn>
+      <v-btn type="button" @click="clearForm">Annuler</v-btn>
+    </v-form>
+  </v-card>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue';
+<script>
+import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
-import { useRouter } from 'vue-router';
 
-const router = useRouter();
-const user = ref({
-  full_name: '',
-  email: '',
-  phone: '',
-  address: '',
-  avatarUrl: '',
-  parcelsManaged: 0,
-  cropsCount: 0,
-  currentStock: ''
-});
-const error = ref(null);
+export default {
+  setup() {
+    const search = ref('');
+    const newFertilizer = ref({ name: '', quantity: 0, unit: '' });
+    const selectedFertilizerId = ref(null);
+    const alerts = ref({ duplicate: false, success: false });
+    const fertilizers = ref([]);
 
-async function fetchUserData() {
-  try {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      router.push('/users/connexion');
-      return;
-    }
-
-    const response = await axios.get('http://localhost:3001/api/user-profile', {
-      headers: {
-        Authorization: `Bearer ${token}`
+    // Charger les fertilisants
+    const loadFertilizers = async () => {
+      try {
+        const response = await axios.get('/api/fertilizers');
+        fertilizers.value = response.data;
+      } catch (error) {
+        console.error("Erreur lors du chargement des fertilisants", error);
       }
+    };
+
+    onMounted(loadFertilizers);
+
+    // Filtrage et tri alphabétique des fertilisants
+    const sortedFertilizers = computed(() => {
+      return fertilizers.value
+        .filter(fertilizer => fertilizer.name.toLowerCase().includes(search.value.toLowerCase()))
+        .sort((a, b) => a.name.localeCompare(b.name)); // Tri alphabétique par nom
     });
 
-    user.value = response.data;
-  } catch (err) {
-    console.error('Erreur lors de la récupération des informations de l\'utilisateur:', err);
-    error.value = 'Erreur lors de la récupération des informations.';
-    router.push('/users/connexion');
+    const headers = [
+      { text: 'Nom', value: 'name' },
+      { text: 'Quantité', value: 'quantity' },
+      { text: 'Unité', value: 'unit' },
+      { text: 'Actions', value: 'actions', sortable: false }
+    ];
+
+    // Enregistrer un fertilisant
+    const saveFertilizer = () => {
+      alerts.value.duplicate = false;
+      alerts.value.success = false;
+
+      // Vérifier l'existence du fertilisant
+      const existingFertilizer = fertilizers.value.find(
+        fertilizer => fertilizer.name.toLowerCase() === newFertilizer.value.name.toLowerCase()
+      );
+
+      if (existingFertilizer) {
+        alerts.value.duplicate = true; // Afficher l'alerte de duplication
+      } else {
+        if (selectedFertilizerId.value) {
+          // Modification
+          const fertilizerIndex = fertilizers.value.findIndex(f => f.id === selectedFertilizerId.value);
+          if (fertilizerIndex !== -1) {
+            fertilizers.value[fertilizerIndex] = { ...newFertilizer.value, id: selectedFertilizerId.value };
+            axios.put(`/api/fertilizers/${selectedFertilizerId.value}`, newFertilizer.value);
+          }
+        } else {
+          // Ajout
+          const newFertilizerData = { ...newFertilizer.value };
+          axios.post('/api/fertilizers', newFertilizerData).then(response => {
+            fertilizers.value.push(response.data);
+            alerts.value.success = true;
+          });
+        }
+        clearForm();
+      }
+    };
+
+    const clearForm = () => {
+      newFertilizer.value = { name: '', quantity: 0, unit: '' };
+      selectedFertilizerId.value = null;
+      alerts.value.duplicate = false;
+      alerts.value.success = false;
+    };
+
+    const handleEntry = async (fertilizer) => {
+      const quantityToAdd = prompt("Entrez la quantité à ajouter :");
+      if (quantityToAdd && !isNaN(quantityToAdd) && quantityToAdd > 0) {
+        fertilizer.quantity += parseFloat(quantityToAdd);
+        await axios.put(`/api/fertilizers/${fertilizer.id}`, fertilizer);
+      }
+    };
+
+    const handleExit = async (fertilizer) => {
+      const quantityToRemove = prompt("Entrez la quantité à retirer :");
+      if (quantityToRemove && !isNaN(quantityToRemove) && quantityToRemove > 0) {
+        fertilizer.quantity -= parseFloat(quantityToRemove);
+        if (fertilizer.quantity < 0) fertilizer.quantity = 0; // Empêcher les quantités négatives
+        await axios.put(`/api/fertilizers/${fertilizer.id}`, fertilizer);
+      }
+    };
+
+    return {
+      search,
+      newFertilizer,
+      selectedFertilizerId,
+      alerts,
+      fertilizers,
+      loadFertilizers,
+      sortedFertilizers,
+      headers,
+      saveFertilizer,
+      clearForm,
+      handleEntry,
+      handleExit
+    };
   }
-}
-
-function changePassword() {
-  alert('Changer le mot de passe');
-}
-
-function logout() {
-  alert('Déconnexion');
-}
-
-onMounted(() => {
-  fetchUserData();
-});
+};
 </script>
 
 <style scoped>
-html, body {
-  height: 100%;
-  margin: 0;
-}
-
-.profile-container {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  padding: 16px;
-  background-color: #f5f5f5;
-}
-
-.profile-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.profile-avatar {
-  margin-right: 16px;
-}
-
-.profile-info {
-  flex: 1;
-}
-
-.profile-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.profile-card {
-  margin-bottom: 16px;
-}
-
-.btn-green {
-  background-color: #4CAF50;
-  color: white;
-  width: 500px;
+.v-alert {
   margin-top: 10px;
-  margin-bottom: 20px;
-}
-
-.btn-red {
-  background-color: #f44336;
-  color: white;
-  width: 500px;
-  margin-left: 20px;
 }
 </style>

@@ -411,7 +411,7 @@ onMounted(() => {
 }
 
 .v-card-title {
-  background: #00796b;
+  background:  #1b5e20;
   color: white;
 }
 
