@@ -15,13 +15,13 @@
             <v-card-text>
               <v-row color="green">
                 <v-col v-for="(forecast, index) in currentForecasts" :key="index" cols="12" md="4">
-                  <v-card class="elevation-1" flat>
+                  <v-card class="elevation-1 " flat>
                     <v-card-title>
                       <v-icon>mdi-weather-partly-cloudy</v-icon>
                       <span class="ml-2">{{ forecast.date }}</span>
                     </v-card-title>
                     <v-card-subtitle>{{ forecast.weather }}</v-card-subtitle>
-                    <v-card-text>
+                    <v-card-text class="dat">
                       Max Temp : {{ forecast.temp_max }} °C
                       <br>
                       Min Temp : {{ forecast.temp_min }} °C
@@ -52,7 +52,7 @@
                 :headers="historicalHeaders"
                 :items="historicalForecasts"
                 item-key="date"
-                class="elevation-1"
+                class="elevation-1 dat"
               >
                 <template v-slot:item.date="{ item }">
                   {{ item.date }}
@@ -160,10 +160,13 @@ export default {
 .v-card-title {
   background: #1b5e20;
   color: white;
+  font-size: 1.5em;
 }
+
 
 .v-card-subtitle {
   font-weight: bold;
+  font-size: 1.1em;
 }
 
 .v-data-table th, .v-data-table td {
@@ -185,5 +188,8 @@ export default {
 
 .mt-5 {
   margin-top: 40px;
+}
+.dat {
+  font-size: 1.2em;
 }
 </style>

@@ -20,6 +20,12 @@ export default defineNuxtConfig({
         transformAssetUrls,
       },
     },
+    optimizeDeps: {
+      include: ['jwt-decode'],
+    },
+     
+    
+  
   },
 
   compatibilityDate: '2024-08-07',

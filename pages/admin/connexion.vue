@@ -72,7 +72,7 @@ export default {
         if (response.data.user && response.data.user.role === 'admin') {
           console.log('Connexion réussie:', response.data);
           localStorage.setItem('token', response.data.token); // Stocker le token
-          this.$router.push('/dashboard'); // Rediriger vers le tableau de bord
+          this.$router.push('/admin/dashbord'); // Rediriger vers le tableau de bord
         } else {
           this.errorMessage = 'Vous n\'êtes pas admin.'; // Message pour les non-admins
         }

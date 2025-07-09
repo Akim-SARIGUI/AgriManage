@@ -2,14 +2,14 @@
   <v-container>
     <v-row>
       <v-col cols="12">
-        <h1>Gestion des Utilisateurs</h1>
-        <v-btn color="success" @click="openAddUserDialog">Ajouter un utilisateur</v-btn>
-        <v-btn color="blue" @click="openAddAdminDialog" class="ml-4">Ajouter un admin</v-btn>
+        <h1 class="text-h4 text-md-h3">Gestion des Utilisateurs</h1>
+        <v-btn color="success" @click="openAddUserDialog" class="mb-4">Ajouter un utilisateur</v-btn>
+        <v-btn color="blue" @click="openAddAdminDialog" class="mb-4 ml-2">Ajouter un admin</v-btn>
         <v-data-table :headers="headers" :items="users" class="elevation-1">
           <template v-slot:item.actions="{ item }">
-            <v-btn color="primary" @click="viewUser(item)">Voir</v-btn>
-            <v-btn class="ml-5" color="warning" @click="openEditUserDialog(item)">Modifier</v-btn>
-            <v-btn class="ml-5" color="red" @click="deleteUser(item)">Supprimer</v-btn>
+            <v-btn color="primary" @click="viewUser(item)" class="mb-2 mb-sm-0">Voir</v-btn>
+            <v-btn color="warning" @click="openEditUserDialog(item)" class="mb-2 mb-sm-0 ml-2">Modifier</v-btn>
+            <v-btn color="red" @click="confirmDeleteUser(item)" class="mb-2 mb-sm-0 ml-2">Supprimer</v-btn>
           </template>
         </v-data-table>
       </v-col>
@@ -69,11 +69,40 @@
       </v-card>
     </v-dialog>
 
+    <!-- Dialog de confirmation -->
+    <v-dialog v-model="confirmDialog" max-width="400px">
+      <v-card>
+        <v-card-title>
+          <span class="headline">Confirmation</span>
+        </v-card-title>
+        <v-card-text>
+          {{ dialogMessage }}
+        </v-card-text>
+        <v-card-actions>
+          <v-btn color="red" text @click="proceedDelete">Supprimer</v-btn>
+          <v-btn color="grey" text @click="closeConfirmDialog">Annuler</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Dialog d'erreur -->
+    <v-dialog v-model="errorDialog" max-width="400px">
+      <v-card>
+        <v-card-title>
+          <span class="headline">Erreur</span>
+        </v-card-title>
+        <v-card-text>
+          {{ dialogMessage }}
+        </v-card-text>
+        <v-card-actions>
+          <v-btn color="grey" text @click="closeErrorDialog">Fermer</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
 <script>
-// Import axios for API calls
 import axios from 'axios';
 
 export default {
@@ -89,6 +118,9 @@ export default {
       addUserDialog: false,
       editUserDialog: false,
       viewUserDialog: false,
+      confirmDialog: false,
+      errorDialog: false,
+      dialogMessage: '',
       newUser: {
         full_name: '',
         email: '',
@@ -96,6 +128,7 @@ export default {
         password: '',
       },
       selectedUser: {},
+      userToDelete: null, // Stocke l'utilisateur à supprimer
     };
   },
   mounted() {
@@ -107,62 +140,75 @@ export default {
         const response = await axios.get('http://localhost:3001/api/users');
         this.users = response.data;
       } catch (error) {
-        console.error('Erreur lors de la récupération des utilisateurs:', error);
+        this.showError('Erreur lors de la récupération des utilisateurs.');
       }
     },
     openAddUserDialog() {
-      this.newUser = { full_name: '', email: '', role: '', password: '' }; // Reset form for regular user
+      this.newUser = { full_name: '', email: '', role: '', password: '' };
       this.addUserDialog = true;
     },
     openAddAdminDialog() {
-      this.newUser = { full_name: '', email: '', role: 'admin', password: '' }; // Set role to admin
-      this.addUserDialog = true; // Open dialog for adding user
+      this.newUser = { full_name: '', email: '', role: 'admin', password: '' };
+      this.addUserDialog = true;
     },
     async addUser() {
       try {
         await axios.post('http://localhost:3001/api/users', this.newUser);
-        this.fetchUsers(); // Reload users list
-        this.addUserDialog = false; // Close dialog
+        this.fetchUsers();
+        this.addUserDialog = false;
       } catch (error) {
-        console.error('Erreur lors de l\'ajout de l\'utilisateur:', error);
+        this.showError("Erreur lors de l'ajout de l'utilisateur.");
       }
     },
     openEditUserDialog(user) {
-      this.selectedUser = { ...user }; // Create a copy of the selected user
+      this.selectedUser = { ...user };
       this.editUserDialog = true;
     },
     async updateUser() {
       try {
         await axios.put(`http://localhost:3001/api/users/${this.selectedUser.id}`, this.selectedUser);
-        this.fetchUsers(); // Reload users list
-        this.editUserDialog = false; // Close dialog
+        this.fetchUsers();
+        this.editUserDialog = false;
       } catch (error) {
-        console.error('Erreur lors de la mise à jour de l\'utilisateur:', error);
+        this.showError("Erreur lors de la mise à jour de l'utilisateur.");
       }
     },
-    async deleteUser(user) {
-      const confirmDelete = confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur ${user.full_name} ?`);
-      if (confirmDelete) {
-        try {
-          await axios.delete(`http://localhost:3001/api/users/${user.id}`);
-          this.fetchUsers(); // Reload users list
-        } catch (error) {
-          console.error('Erreur lors de la suppression de l\'utilisateur:', error);
-        }
+    confirmDeleteUser(user) {
+      this.userToDelete = user;
+      this.dialogMessage = `Êtes-vous sûr de vouloir supprimer l'utilisateur ${user.full_name} ?`;
+      this.confirmDialog = true;
+    },
+    async proceedDelete() {
+      try {
+        await axios.delete(`http://localhost:3001/api/users/${this.userToDelete.id}`);
+        this.fetchUsers();
+        this.confirmDialog = false;
+      } catch (error) {
+        this.showError("Erreur lors de la suppression de l'utilisateur.");
       }
     },
     viewUser(user) {
-      this.selectedUser = user; // Assign selected user
-      this.viewUserDialog = true; // Open view dialog
+      this.selectedUser = user;
+      this.viewUserDialog = true;
+    },
+    showError(message) {
+      this.dialogMessage = message;
+      this.errorDialog = true;
     },
     closeAddUserDialog() {
-      this.addUserDialog = false; // Close add dialog
+      this.addUserDialog = false;
     },
     closeEditUserDialog() {
-      this.editUserDialog = false; // Close edit dialog
+      this.editUserDialog = false;
     },
     closeViewUserDialog() {
-      this.viewUserDialog = false; // Close view dialog
+      this.viewUserDialog = false;
+    },
+    closeConfirmDialog() {
+      this.confirmDialog = false;
+    },
+    closeErrorDialog() {
+      this.errorDialog = false;
     },
   },
 };
@@ -170,5 +216,21 @@ export default {
 
 <style scoped>
 /* Styles pour le tableau des utilisateurs */
-</style>
+.v-data-table {
+  overflow-x: auto;
+}
 
+/* Ajustements pour les petits écrans */
+@media (max-width: 600px) {
+  .text-h4 {
+    font-size: 1.5rem;
+  }
+  .v-btn {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  .v-btn.ml-2 {
+    margin-left: 0 !important;
+  }
+}
+</style>

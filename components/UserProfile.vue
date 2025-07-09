@@ -246,7 +246,7 @@ html, body {
 }
 
 .profile-card {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .btn-green {

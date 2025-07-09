@@ -1,190 +1,309 @@
 <template>
-  <v-container fluid>
-    <!-- En-tête du tableau de bord -->
-    <v-row class="ma-5" no-gutters>
-      <v-col cols="12" class="d-flex justify-center">
-        <v-img
-          src="https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0" 
-          height="200px"
-          class="dashboard-banner"
-        ></v-img>
-      </v-col>
-    </v-row>
+  <v-app>
+    <!-- Section Hero (Accueil) -->
+    <v-container fluid class="hero-section py-6" id="dashboard">
+  <v-row align="center" justify="center">
+    <v-col cols="12" md="6" class="text-center">
+      <h1 class="title text-h3 pa-2" data-aos="fade-down">Bienvenue sur Gestion de Ferme Agricole</h1>
+      <p class="subtitle text-h6 pb-2" data-aos="fade-up">
+        Optimisez votre production agricole avec notre application.
+      </p>
+      <v-btn
+        color="primary"
+        class="explore-button"
+        small
+        @click="scrollToSection('features')"
+        data-aos="zoom-in"
+      >
+        Explorer
+      </v-btn>
+    </v-col>
+  </v-row>
+</v-container>
 
-    <!-- Message central avec plus de texte -->
-    <v-row class="text-center ma-5 elevation-10">
-      <v-col cols="12">
-        <h1 class="headline"><strong>Gérez vos fermes avec facilité</strong></h1>
-        <p class="subheading">
-          <strong>Accédez à vos parcelles, vos cultures, suivez la météo, et obtenez des</strong>
-          rapports financiers détaillés en temps réel. Restez informé des
-          meilleures pratiques agricoles avec des recommandations adaptées à
-          votre ferme. Planifiez vos récoltes et optimisez vos ressources à
-          tout moment et n'importe où.
-        </p>
-        <p class="additional-info">
-          Notre solution vous permet de surveiller chaque étape de votre
-          production agricole, tout en garantissant la traçabilité complète
-          et la gestion optimisée de vos stocks.
-        </p>
-      </v-col>
-    </v-row>
 
-    <!-- Icônes animées avec du texte supplémentaire -->
-    <v-row class="justify-center mt-5 txt">
-      <v-col cols="12" md="3" class="d-flex flex-column align-center">
-        <v-icon large class="animated-icon">mdi-farm</v-icon>
-        <p>Gérez vos parcelles de manière efficace.</p>
-      </v-col>
-      <v-col cols="12" md="3" class="d-flex flex-column align-center">
-        <v-icon large class="animated-icon">mdi-leaf</v-icon>
-        <p>Surveillez et optimisez vos cultures.</p>
-      </v-col>
-      <v-col cols="12" md="3" class="d-flex flex-column align-center">
-        <v-icon large class="animated-icon">mdi-weather-sunny</v-icon>
-        <p>Prévisions météorologiques pour une meilleure planification.</p>
-      </v-col>
-      <v-col cols="12" md="3" class="d-flex flex-column align-center">
-        <v-icon large class="animated-icon">mdi-file-chart</v-icon>
-        <p>Rapports financiers détaillés et en temps réel.</p>
-      </v-col>
-    </v-row>
+    <!-- Section Présentation -->
+    <v-container class="presentation-section" fluid>
+      <v-row align="center">
+        <v-col cols="12" md="6" data-aos="fade-right">
+          <v-img src="/pexels-quang-nguyen-vinh-222549-2131784.jpg" class="presentation-image"></v-img>
+        </v-col>
+        <v-col cols="12" md="6" class="d-flex align-center" data-aos="fade-left">
+          <div>
+            <h2 class="presentation-title">À propos de l'application</h2>
+            <p class="presentation-description">
+              Notre plateforme vous aide à gérer efficacement vos parcelles, cultures et ressources
+              tout en vous fournissant des outils de planification et d'analyse avancés.
+            </p>
+          </div>
+        </v-col>
+      </v-row>
+    </v-container>
 
-    <!-- Section V-Cards animées avec images de la ferme -->
-    <v-row class="mt-5 ma-10">
-      <v-col cols="12" md="4">
-        <v-card class="v-card-animated">
-          <v-img src="https://images.unsplash.com/photo-1588355841395-8c2a4e8b6b7f" height="150px" class="v-card-img"></v-img> <!-- Image of a wheat field -->
-          <v-card-title><strong>Suivi des Parcelles</strong></v-card-title>
-          <v-card-text>
-            Visualisez et gérez chaque parcelle de votre ferme avec des
-            fonctionnalités avancées de localisation et de suivi.
-          </v-card-text>
-        </v-card>
-      </v-col>
+    <!-- Section Fonctionnalités -->
+    <v-container class="features-section" id="features" fluid>
+      <v-row>
+        <v-col cols="12" class="text-center">
+          <h2 class="section-title" data-aos="fade-down">Fonctionnalités Principales</h2>
+          <p class="section-subtitle" data-aos="fade-up">
+            Découvrez les outils qui vous aideront à gérer votre ferme efficacement.
+          </p>
+        </v-col>
 
-      <v-col cols="12" md="4">
-        <v-card class="v-card-animated">
-          <v-img src="https://images.unsplash.com/photo-1519337265831-281ec6cc8514" height="150px" class="v-card-img"></v-img> <!-- Image of crops -->
-          <v-card-title><strong>Suivi des Cultures</strong></v-card-title>
-          <v-card-text>
-            Restez à jour sur la croissance de vos cultures, leur santé, et
-            les meilleures pratiques pour augmenter les rendements.
-          </v-card-text>
-        </v-card>
-      </v-col>
+        <!-- Carte Fonctionnalité 1 -->
+        <v-col v-for="(feature, index) in features" :key="index" cols="12" md="4">
+          <v-card
+            class="feature-card pa-6"
+            data-aos="fade-up"
+            :data-aos-delay="index * 100"
+            outlined
+            hover
+          >
+            <v-icon size="64" :color="feature.iconColor" class="mb-4">{{ feature.icon }}</v-icon>
+            <v-card-title class="text-center feature-title">{{ feature.title }}</v-card-title>
+            <v-card-text class="text-center feature-description">
+              {{ feature.description }}
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
 
-      <v-col cols="12" md="4">
-        <v-card class="v-card-animated">
-          <v-img src="https://images.unsplash.com/photo-1560807708-3e215c1b8e0c" height="150px" class="v-card-img"></v-img> <!-- Image of a tractor in a field -->
-          <v-card-title><strong>Prévisions Météo</strong></v-card-title>
-          <v-card-text>
-            Recevez des prévisions météorologiques actualisées pour planifier
-            vos activités agricoles et anticiper les aléas climatiques.
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+    <!-- Section Compétences Requises -->
+    <v-container class="skills-section" fluid>
+      <v-row>
+        <v-col cols="12" class="text-center" data-aos="fade-down">
+          <h2 class="section-title">Compétences Recommandées</h2>
+        </v-col>
+        <v-col v-for="(skill, index) in skills" :key="index" cols="12" md="4" data-aos="fade-up" :data-aos-delay="index * 100">
+          <v-card class="skill-card pa-6" outlined>
+            <v-icon large color="primary">{{ skill.icon }}</v-icon>
+            <v-card-title class="text-center">{{ skill.title }}</v-card-title>
+            <v-card-text class="text-center">{{ skill.description }}</v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
 
-    <!-- Animation auto d'affichage des mises à jour (Exemple: Nouvelles) -->
-    <v-row class="auto-updating-section mt-5">
-      <v-col cols="12" class="text-center">
-        <v-card class="auto-update-card">
-          <v-card-title><strong>Nouvelles mises à jour</strong></v-card-title>
-          <v-card-text>
-            <span>{{ newsUpdate }}</span>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-  </v-container>
+    <!-- Section Call to Action -->
+   <v-container class="cta-section py-4" fluid>
+  <v-row align="center" justify="center">
+    <v-col cols="12" md="6" class="text-center">
+      <h2 class="cta-title text-h5" data-aos="fade-down">Transformez Votre Ferme</h2>
+      <p class="cta-subtitle text-body-2 pb-4" data-aos="fade-up">
+        Utilisez notre application pour une gestion agricole moderne et efficace.
+      </p>
+      <v-btn
+        color="primary"
+        class="cta-button"
+        small
+        @click="scrollToSection('dashboard')"
+        data-aos="zoom-in"
+      >
+        Commencer
+      </v-btn>
+    </v-col>
+  </v-row>
+</v-container>
+
+  </v-app>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted } from "vue";
+import AOS from "aos";
+import "aos/dist/aos.css";
 
-// Simulating dynamic updates from an API
-const newsUpdate = ref('Chargement des dernières nouvelles...');
+// Données des fonctionnalités
+const features = ref([
+  {
+    icon: "mdi-map-marker",
+    iconColor: "green",
+    title: "Gestion des Parcelles",
+    description: "Visualisez et gérez vos parcelles agricoles en temps réel.",
+  },
+  {
+    icon: "mdi-calendar-check",
+    iconColor: "blue",
+    title: "Planification des Tâches",
+    description: "Organisez vos activités agricoles avec un calendrier intuitif.",
+  },
+  {
+    icon: "mdi-weather-cloudy",
+    iconColor: "orange",
+    title: "Prévisions Météo",
+    description: "Accédez à des prévisions météo précises pour mieux planifier vos travaux.",
+  },
+  {
+    icon: "mdi-finance",
+    iconColor: "purple",
+    title: "Gestion Financière",
+    description: "Suivez vos revenus, dépenses et bénéficiez d'analyses détaillées.",
+  },
+  {
+    icon: "mdi-warehouse",
+    iconColor: "red",
+    title: "Gestion des Stocks",
+    description: "Surveillez et gérez vos stocks d'intrants et de récoltes efficacement.",
+  },
+  {
+    icon: "mdi-lightbulb",
+    iconColor: "teal",
+    title: "Recommandations Intelligentes",
+    description: "Recevez des suggestions basées sur vos données pour améliorer votre rendement.",
+  },
+]);
 
+
+// Données des compétences
+const skills = ref([
+  { title: "Utilisation de l'application", description: "Savoir naviguer dans l'interface et utiliser les fonctionnalités principales.", icon: "mdi-laptop" },
+  { title: "Notions en gestion agricole", description: "Comprendre les bases de la gestion des cultures et des parcelles.", icon: "mdi-leaf" },
+  { title: "Analyse et planification", description: "Être capable d'interpréter les données pour optimiser la production.", icon: "mdi-chart-line" }
+]);
+
+// Initialiser AOS
 onMounted(() => {
-  // Simulating dynamic data fetching (replace with actual API call)
-  setTimeout(() => {
-    newsUpdate.value =
-      'Le traitement des cultures est prévu cette semaine pour la parcelle A3.';
-  }, 3000);
-
-  // Simulating continuous updates
-  setInterval(() => {
-    const updates = [
-      'Les prévisions indiquent un risque de sécheresse la semaine prochaine.',
-      'Nouveau rapport financier disponible pour le mois d’août.',
-      'Vos cultures de maïs sont prêtes pour la récolte.',
-      'Mise à jour de la météo: Températures élevées attendues demain.',
-    ];
-    const randomUpdate = updates[Math.floor(Math.random() * updates.length)];
-    newsUpdate.value = randomUpdate;
-  }, 7000);
+  AOS.init({ duration: 1000 });
 });
+
+// Fonction pour faire défiler vers une section
+const scrollToSection = (sectionId) => {
+  const element = document.getElementById(sectionId);
+  if (element) {
+    element.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+};
 </script>
 
 <style scoped>
-.dashboard-banner {
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  width: 100%;   /* L'image occupe toute la largeur */
-  height: 100vh; /* L'image occupe toute la hauteur de la fenêtre */
-  object-fit: cover; /* Permet de s'assurer que l'image couvre toute la zone */
+/* Styles Généraux */
+.full-height {
+  height: 50vh; /* Réduire la hauteur de la section d'accueil */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-  
-.headline {
-  font-size: 2.5rem;
+
+/* Section Hero */
+.hero-section {
+  background: linear-gradient(rgba(0, 0, 0, 0.5), url("https://via.placeholder.com/1920x1080") no-repeat center center);
+  background-size: cover;
+  color: rgb(11, 116, 64);
+  padding: 20px 0; /* Ajouter un peu de padding */
+}
+
+.title {
+  font-size: 3em; /* Réduire la taille du titre */
   font-weight: bold;
-  margin-bottom: 10px;
+  margin-bottom: 10px; /* Réduire l'espace sous le titre */
 }
 
-.subheading {
-  font-size: 1.25rem;
+.subtitle {
+  font-size: 1.2em; /* Réduire la taille du sous-titre */
+  margin-bottom: 20px;
 }
 
-.additional-info {
-  margin-top: 10px;
-  font-size: 1.15rem;
-  color: gray;
+.explore-button {
+  font-size: 1em; /* Réduire la taille du bouton */
+  margin-top: 10px; /* Ajouter un peu d'espace au-dessus du bouton */
 }
 
-.animated-icon {
-  transition: transform 0.3s;
-  cursor: pointer;
+/* Section Présentation */
+.presentation-section {
+  padding: 40px 0; /* Réduire le padding */
 }
 
-.animated-icon:hover {
-  transform: scale(1.2);
+.presentation-image {
+  width: 100%;
+  max-height: 400px; /* Limiter la hauteur de l'image */
+  object-fit: cover; /* Assurer que l'image couvre bien l'espace */
+  border-radius: 10px;
 }
 
-.v-card-animated {
-  transition: transform 0.3s, box-shadow 0.3s;
-  cursor: pointer;
-   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+.presentation-title {
+  font-size: 4em; /* Réduire la taille du titre */
+  font-weight: bold;
+  margin-bottom: 15px; /* Réduire l'espace sous le titre */
 }
 
-.v-card-animated:hover {
+.presentation-description {
+  font-size: 2em; /* Réduire la taille de la description */
+  color: #555;
+  line-height: 1.6; /* Améliorer la lisibilité */
+}
+
+/* Section Fonctionnalités */
+.features-section {
+  background-color: #f5f5f5;
+  padding: 40px 0; /* Réduire le padding */
+}
+
+.section-title {
+  font-size: 2em; /* Réduire la taille du titre */
+  font-weight: bold;
+  margin-bottom: 15px; /* Réduire l'espace sous le titre */
+}
+
+.section-subtitle {
+  font-size: 1.1em; /* Réduire la taille du sous-titre */
+  margin-bottom: 30px; /* Réduire l'espace sous le sous-titre */
+}
+
+.feature-card {
+  transition: transform 0.3s ease;
+  padding: 20px; /* Réduire le padding */
+}
+
+.feature-card:hover {
   transform: scale(1.05);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
-.v-card-img {
-  border-radius: 8px 8px 0 0;
+.feature-title {
+  font-size: 1.3em; /* Réduire la taille du titre */
+  font-weight: bold;
 }
 
-.auto-updating-section {
-  margin-top: 50px;
+.feature-description {
+  font-size: 1em; /* Réduire la taille de la description */
 }
-.txt {
-  font-size: 1.2em;
-}
-.auto-update-card {
+
+/* Section Compétences */
+.skills-section {
   background-color: #e8f5e9;
-  padding: 20px;
-  border-radius: 8px;
+  padding: 40px 0; /* Réduire le padding */
+}
+
+.skill-card {
+  text-align: center;
+  border-radius: 10px;
+  transition: transform 0.3s;
+  padding: 20px; /* Réduire le padding */
+}
+
+.skill-card:hover {
+  transform: scale(1.05);
+}
+
+/* Section Call to Action */
+.cta-section {
+  background-color: #1b5e20;
+  color: white;
+  padding: 40px 0; /* Réduire le padding */
+}
+
+.cta-title {
+  font-size: 2em; /* Réduire la taille du titre */
+  font-weight: bold;
+  margin-bottom: 15px; /* Réduire l'espace sous le titre */
+}
+
+.cta-subtitle {
+  font-size: 1.1em; /* Réduire la taille du sous-titre */
+  margin-bottom: 20px; /* Réduire l'espace sous le sous-titre */
+}
+
+.cta-button {
+  font-size: 1em; /* Réduire la taille du bouton */
 }
 </style>

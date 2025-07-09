@@ -1,152 +1,112 @@
 <template>
-  <v-card>
-    <v-card-title>Gestion des Fertilisants</v-card-title>
+  <v-container fluid>
+    <v-row class="ma-5" no-gutters>
+      <v-col cols="12" class="d-flex justify-center">
+        <v-img
+          src="https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0"
+          height="200px"
+          class="dashboard-banner"
+        ></v-img>
+      </v-col>
+    </v-row>
 
-    <!-- Champ de Recherche -->
-    <v-text-field v-model="search" label="Rechercher un fertilisant" />
+    <!-- Affichage des informations pour les différentes sections -->
+    <v-row class="mt-5">
+      <!-- Affichage des parcelles -->
+      <v-col cols="12" md="3" v-if="parcelles.length">
+        <v-card class="v-card-animated">
+          <v-card-title><strong>Parcelles</strong></v-card-title>
+          <v-card-text>
+            <ul>
+              <li v-for="parcelle in parcelles" :key="parcelle.id">
+                {{ parcelle.nom }} - {{ parcelle.superficie }} ha
+              </li>
+            </ul>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-    <!-- Tableau des Fertilisants -->
-    <v-data-table
-      :items="sortedFertilizers"
-      :headers="headers"
-      item-key="id"
-      class="elevation-1"
-    >
-      <template v-slot:item.actions="{ item }">
-        <v-btn small @click="handleEntry(item)">Ajouter Quantité</v-btn>
-        <v-btn small @click="handleExit(item)">Retirer Quantité</v-btn>
-      </template>
-    </v-data-table>
+      <!-- Affichage des cultures -->
+      <v-col cols="12" md="3" v-if="cultures.length">
+        <v-card class="v-card-animated">
+          <v-card-title><strong>Cultures</strong></v-card-title>
+          <v-card-text>
+            <ul>
+              <li v-for="culture in cultures" :key="culture.id">
+                {{ culture.nom }} - {{ culture.statut }}
+              </li>
+            </ul>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-    <!-- Formulaire d'Ajout/Modification de Fertilisant -->
-    <v-form @submit.prevent="saveFertilizer">
-      <v-text-field v-model="newFertilizer.name" label="Nom du fertilisant" required />
-      <v-text-field v-model="newFertilizer.quantity" label="Quantité" type="number" min="1" required />
-      <v-text-field v-model="newFertilizer.unit" label="Unité" required />
+      <!-- Affichage des stocks -->
+      <v-col cols="12" md="3" v-if="stocks.length">
+        <v-card class="v-card-animated">
+          <v-card-title><strong>Stocks</strong></v-card-title>
+          <v-card-text>
+            <ul>
+              <li v-for="stock in stocks" :key="stock.id">
+                {{ stock.produit }} - {{ stock.quantite }} unités
+              </li>
+            </ul>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <v-alert v-if="alerts.duplicate" type="error">Ce fertilisant existe déjà. Utilisez 'Ajouter Quantité' ou 'Retirer Quantité'.</v-alert>
-      <v-alert v-if="alerts.success" type="success">Fertilisation ajoutée/modifiée avec succès.</v-alert>
-
-      <v-btn type="submit">Sauvegarder</v-btn>
-      <v-btn type="button" @click="clearForm">Annuler</v-btn>
-    </v-form>
-  </v-card>
+      <!-- Affichage des prévisions météo -->
+      <v-col cols="12" md="3" v-if="meteo.length">
+        <v-card class="v-card-animated">
+          <v-card-title><strong>Météo</strong></v-card-title>
+          <v-card-text>
+            <ul>
+              <li v-for="prevision in meteo" :key="prevision.id">
+                {{ prevision.date }} - Température: {{ prevision.temperature }}°C
+              </li>
+            </ul>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
-<script>
-import { ref, computed, onMounted } from 'vue';
+<script setup>
+import { ref, onMounted } from 'vue';
 import axios from 'axios';
 
-export default {
-  setup() {
-    const search = ref('');
-    const newFertilizer = ref({ name: '', quantity: 0, unit: '' });
-    const selectedFertilizerId = ref(null);
-    const alerts = ref({ duplicate: false, success: false });
-    const fertilizers = ref([]);
+const parcelles = ref([]);
+const cultures = ref([]);
+const stocks = ref([]);
+const meteo = ref([]);
 
-    // Charger les fertilisants
-    const loadFertilizers = async () => {
-      try {
-        const response = await axios.get('/api/fertilizers');
-        fertilizers.value = response.data;
-      } catch (error) {
-        console.error("Erreur lors du chargement des fertilisants", error);
-      }
-    };
+onMounted(async () => {
+  try {
+    // Appels API pour récupérer les données du backend
+    const parcellesResponse = await axios.get('/api/parcelles');
+    parcelles.value = parcellesResponse.data;
 
-    onMounted(loadFertilizers);
+    const culturesResponse = await axios.get('/api/cultures');
+    cultures.value = culturesResponse.data;
 
-    // Filtrage et tri alphabétique des fertilisants
-    const sortedFertilizers = computed(() => {
-      return fertilizers.value
-        .filter(fertilizer => fertilizer.name.toLowerCase().includes(search.value.toLowerCase()))
-        .sort((a, b) => a.name.localeCompare(b.name)); // Tri alphabétique par nom
-    });
+    const stocksResponse = await axios.get('/api/stocks');
+    stocks.value = stocksResponse.data;
 
-    const headers = [
-      { text: 'Nom', value: 'name' },
-      { text: 'Quantité', value: 'quantity' },
-      { text: 'Unité', value: 'unit' },
-      { text: 'Actions', value: 'actions', sortable: false }
-    ];
-
-    // Enregistrer un fertilisant
-    const saveFertilizer = () => {
-      alerts.value.duplicate = false;
-      alerts.value.success = false;
-
-      // Vérifier l'existence du fertilisant
-      const existingFertilizer = fertilizers.value.find(
-        fertilizer => fertilizer.name.toLowerCase() === newFertilizer.value.name.toLowerCase()
-      );
-
-      if (existingFertilizer) {
-        alerts.value.duplicate = true; // Afficher l'alerte de duplication
-      } else {
-        if (selectedFertilizerId.value) {
-          // Modification
-          const fertilizerIndex = fertilizers.value.findIndex(f => f.id === selectedFertilizerId.value);
-          if (fertilizerIndex !== -1) {
-            fertilizers.value[fertilizerIndex] = { ...newFertilizer.value, id: selectedFertilizerId.value };
-            axios.put(`/api/fertilizers/${selectedFertilizerId.value}`, newFertilizer.value);
-          }
-        } else {
-          // Ajout
-          const newFertilizerData = { ...newFertilizer.value };
-          axios.post('/api/fertilizers', newFertilizerData).then(response => {
-            fertilizers.value.push(response.data);
-            alerts.value.success = true;
-          });
-        }
-        clearForm();
-      }
-    };
-
-    const clearForm = () => {
-      newFertilizer.value = { name: '', quantity: 0, unit: '' };
-      selectedFertilizerId.value = null;
-      alerts.value.duplicate = false;
-      alerts.value.success = false;
-    };
-
-    const handleEntry = async (fertilizer) => {
-      const quantityToAdd = prompt("Entrez la quantité à ajouter :");
-      if (quantityToAdd && !isNaN(quantityToAdd) && quantityToAdd > 0) {
-        fertilizer.quantity += parseFloat(quantityToAdd);
-        await axios.put(`/api/fertilizers/${fertilizer.id}`, fertilizer);
-      }
-    };
-
-    const handleExit = async (fertilizer) => {
-      const quantityToRemove = prompt("Entrez la quantité à retirer :");
-      if (quantityToRemove && !isNaN(quantityToRemove) && quantityToRemove > 0) {
-        fertilizer.quantity -= parseFloat(quantityToRemove);
-        if (fertilizer.quantity < 0) fertilizer.quantity = 0; // Empêcher les quantités négatives
-        await axios.put(`/api/fertilizers/${fertilizer.id}`, fertilizer);
-      }
-    };
-
-    return {
-      search,
-      newFertilizer,
-      selectedFertilizerId,
-      alerts,
-      fertilizers,
-      loadFertilizers,
-      sortedFertilizers,
-      headers,
-      saveFertilizer,
-      clearForm,
-      handleEntry,
-      handleExit
-    };
+    const meteoResponse = await axios.get('/api/meteo');
+    meteo.value = meteoResponse.data;
+  } catch (error) {
+    console.error('Erreur lors du chargement des données :', error);
   }
-};
+});
 </script>
 
 <style scoped>
-.v-alert {
-  margin-top: 10px;
+/* Styles pour votre tableau de bord */
+.dashboard-banner {
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  height: 100vh;
+  object-fit: cover;
 }
 </style>

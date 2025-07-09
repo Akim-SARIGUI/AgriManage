@@ -166,9 +166,10 @@ onMounted(async () => {
   margin-right: 16px;
 }
 .agri {
-  font-size: 1.8em;
+  font-size: 1.7em;
 }
 .align-title {
   flex: 1;
+  font-size: 1.2em;
 }
 </style>

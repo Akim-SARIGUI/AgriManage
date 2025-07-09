@@ -1,154 +1,472 @@
 <template>
-  <div class="profile-container">
-    <div class="profile-header">
-      <v-avatar size="100" class="profile-avatar">
-        <img :src="user.avatarUrl" alt="Profile Picture" />
-      </v-avatar>
-      <div class="profile-info">
-        <h1 class="text-3xl font-extrabold text-green-600">{{ user.full_name }}</h1>
-        <p class="text-lg text-gray-700">{{ user.email }}</p>
-      </div>
-    </div>
+  <v-container>
+    <v-row>
+      <v-col cols="12">
+        <v-expansion-panels multiple>
+          <v-expansion-panel
+            v-for="parcel in parcelles"
+            :key="parcel.id"
+          >
+            <v-expansion-panel-header
+              @click="toggleCrops(parcel.id)"
+              class="custom-panel-header"
+            >
+              {{ parcel.name }} - Créé le {{ formatDate(parcel.created_at) }}
+              <v-spacer></v-spacer>
+            </v-expansion-panel-header>
 
-    <div class="profile-content">
-      <v-card class="profile-card">
-        <v-card-title class="bg-green-50 text-green-700">Informations Personnelles</v-card-title>
-        <v-card-subtitle class="p-4">
-          <div class="flex flex-col">
-            <div class="mb-2"><strong>Nom :</strong>  {{ user.full_name }}</div>
-            <div class="mb-2"><strong>Email :</strong> {{ user.email }}</div>
-            <div class="mb-2"><strong>Téléphone :</strong> {{ user.phone }}</div>
-            <div class="mb-2"><strong>Adresse :</strong> {{ user.address }}</div>
-          </div>
-        </v-card-subtitle>
+            <v-expansion-panel-content v-if="showCrops[parcel.id]">
+              <v-row>
+                <v-col cols="12" class="text-center">
+                  <v-btn @click="showAddCropDialog(parcel.id)" color="primary">
+                    Ajouter une culture
+                  </v-btn>
+                </v-col>
+              </v-row>
+              <v-row v-if="parcel.crops && parcel.crops.length">
+                <v-col
+                  v-for="crop in parcel.crops"
+                  :key="crop.id"
+                  cols="12"
+                  md="6"
+                  lg="4"
+                >
+                  <v-card class="pa-4">
+                    <v-card-title>{{ crop.name }}</v-card-title>
+                    <v-card-subtitle>Date de plantation : {{ formatDate(crop.planting_date) }}</v-card-subtitle>
+                    <v-card-actions>
+                      <v-btn @click="showEditCropDialog(crop)" color="blue">
+                        Modifier
+                      </v-btn>
+                      <v-btn @click="confirmDeleteCrop(crop.id)" color="red">
+                        Supprimer
+                      </v-btn>
+                      <v-btn @click="showFollowCropDialog(crop)" color="green">
+                        Suivre
+                      </v-btn>
+                    </v-card-actions>
+                  </v-card>
+                </v-col>
+              </v-row>
+              <v-row v-else>
+                <v-col cols="12">
+                  <v-alert type="info" class="text-center">Aucune culture disponible pour cette parcelle.</v-alert>
+                </v-col>
+              </v-row>
+            </v-expansion-panel-content>
+          </v-expansion-panel>
+        </v-expansion-panels>
+      </v-col>
+    </v-row>
+
+    <!-- Dialogue pour ajouter une culture-->
+    <v-dialog v-model="showDialogAddCrop" max-width="600px">
+      <v-card>
+        <v-card-title class="headline">Ajouter une culture</v-card-title>
+        <v-card-text>
+          <v-form ref="formAddCrop">
+            <v-text-field v-model="newCrop.name" label="Nom de la culture" required />
+            <v-text-field v-model="newCrop.planting_date" label="Date de plantation" type="date" required />
+            <v-text-field v-model="newCrop.harvest_date" label="Date de récolte" type="date" />
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn @click="addCrop" color="primary">Ajouter</v-btn>
+          <v-btn @click="showDialogAddCrop = false" color="grey">Annuler</v-btn>
+        </v-card-actions>
       </v-card>
+    </v-dialog>
 
-      <v-card class="profile-card">
-        <v-card-title class="bg-green-50 text-green-700">Statistiques de l'Utilisateur</v-card-title>
-        <v-card-subtitle class="p-4">
-          <div class="flex flex-col">
-            <div class="mb-2"><strong>Parcelles Gérées :</strong> {{ user.parcelsManaged }}</div>
-            <div class="mb-2"><strong>Nombre de Cultures :</strong> {{ user.cropsCount }}</div>
-            <div class="mb-2"><strong>Stocks Actuels :</strong> {{ user.currentStock }}</div>
-          </div>
-        </v-card-subtitle>
+    <v-dialog v-model="showDialogEditCrop" max-width="600px">
+      <v-card>
+        <v-card-title class="headline">Modifier une culture</v-card-title>
+        <v-card-text>
+          <v-form ref="formEditCrop">
+            <v-text-field v-model="editCrop.name" label="Nom de la culture" required />
+            <v-text-field v-model="editCrop.planting_date" label="Date de plantation" type="date" required />
+            <v-text-field v-model="editCrop.harvest_date" label="Date de récolte" type="date" />
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn @click="updateCrop" color="primary">Modifier</v-btn>
+          <v-btn @click="showDialogEditCrop = false" color="grey">Annuler</v-btn>
+        </v-card-actions>
       </v-card>
+    </v-dialog>
 
-      <v-card class="profile-card">
-        <v-card-title class="bg-green-50 text-green-700">Paramètres de Sécurité</v-card-title>
-        <v-card-subtitle class="p-4">
-          <v-btn @click="changePassword" class="btn-green">Changer le Mot de Passe</v-btn>
-        </v-card-subtitle>
+   <v-dialog v-model="showDialogFollowCrop" max-width="800px">
+  <v-card>
+    <v-card-title class="headline">Activités pour {{ selectedCrop.name }}</v-card-title>
+    <v-card-text>
+      <!-- Bouton pour ajouter une activité -->
+      <v-row>
+        <v-col cols="12" class="text-right">
+          <v-btn @click="showAddActivityDialog(selectedCrop.id)" color="primary">
+            Ajouter une activité
+          </v-btn>
+        </v-col>
+      </v-row>
+
+      <!-- Tableau des activités -->
+      <v-data-table
+        v-if="selectedCrop.activities && selectedCrop.activities.length"
+        :headers="activityHeaders"
+        :items="selectedCrop.activities"
+        dense
+        class="mt-4"
+      >
+        <!-- Affichage des données pour chaque colonne -->
+        <template v-slot:item.date="{ item }">
+          {{ formatDate(item.date) }}
+        </template>
+
+        <!-- Checkbox pour l'intervention -->
+        <template v-slot:item.selected="{ item }">
+          <v-checkbox
+            v-model="item.selected"
+            @change="updateIntervention(item)"
+          ></v-checkbox>
+        </template>
+
+        <!-- Boutons d'actions -->
+        <template v-slot:item.actions="{ item }">
+          <v-btn small color="blue" @click="showEditActivityDialog(item)">Modifier</v-btn>
+          <v-btn small color="red" @click="confirmDeleteActivity(item.id)">Supprimer</v-btn>
+        </template>
+      </v-data-table>
+
+      <!-- Alerte si aucune activité n'est disponible -->
+      <v-row v-else>
+        <v-col cols="12">
+          <v-alert type="info" class="text-center">Aucune activité disponible pour cette culture.</v-alert>
+        </v-col>
+      </v-row>
+    </v-card-text>
+  </v-card>
+</v-dialog>
+    <v-dialog v-model="showDialogAddActivity" max-width="600px">
+      <v-card>
+        <v-card-title class="headline">Ajouter une activité</v-card-title>
+        <v-card-text>
+          <v-form ref="formAddActivity">
+            <v-text-field v-model="newActivity.name" label="Nom de l'activité" required />
+            <v-text-field v-model="newActivity.date" label="Date de l'activité" type="date" required />
+            <v-textarea v-model="newActivity.details" label="Détails de l'activité" />
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn @click="addActivity" color="primary">Ajouter</v-btn>
+          <v-btn @click="showDialogAddActivity = false" color="grey">Annuler</v-btn>
+        </v-card-actions>
       </v-card>
+    </v-dialog>
 
-      <v-btn @click="logout" class="btn-red">Déconnexion</v-btn>
-    </div>
-  </div>
+    <v-dialog v-model="showDialogEditActivity" max-width="600px">
+      <v-card>
+        <v-card-title class="headline">Modifier une activité</v-card-title>
+        <v-card-text>
+          <v-form ref="formEditActivity">
+            <v-text-field v-model="editActivity.name" label="Nom de l'activité" required />
+            <v-text-field v-model="editActivity.date" label="Date de l'activité" type="date" required />
+            <v-textarea v-model="editActivity.details" label="Détails de l'activité" />
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn @click="updateActivity" color="primary">Modifier</v-btn>
+          <v-btn @click="showDialogEditActivity = false" color="grey">Annuler</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+  </v-container>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue';
-import axios from 'axios';
-import { useRouter } from 'vue-router';
+<script>
+import axios from "axios";
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
 
-const router = useRouter();
-const user = ref({
-  full_name: '',
-  email: '',
-  phone: '',
-  address: '',
-  avatarUrl: '',
-  parcelsManaged: 0,
-  cropsCount: 0,
-  currentStock: ''
-});
-const error = ref(null);
+export default {
+  setup() {
+    const router = useRouter();
+    const user = ref(null);
+    const error = ref(null);
+    const parcelles = ref([]);
+    const showDialogAddCrop = ref(false);
+    const newCrop = ref({ name: '', planting_date: '', harvest_date: '' });
+    const showCrops = ref({});
+    const showDialogEditCrop = ref(false);
+    const editCrop = ref({});
+    const showDialogFollowCrop = ref(false);
+    const selectedCrop = ref({});
+    const showDialogAddActivity = ref(false);
+    const newActivity = ref({ name: '', date: '', details: '' });
+    const showDialogEditActivity = ref(false);
+    const editActivity = ref({});
+    const interventions = ref([]);// Liste des interventions
+    const activityHeaders = ref([
+  { text: "Nom de l'activité", value: "name" },
+  { text: "Date de l'activité", value: "date" },
+  { text: "Détails", value: "details" },
+  { text: "Intervention", value: "selected", sortable: false },
+  { text: "Actions", value: "actions", sortable: false },
+]);
 
-async function fetchUserData() {
+
+
+    // Chargement des interventions depuis le localStorage
+    const loadInterventions = () => {
+      const storedInterventions = localStorage.getItem('interventions');
+      if (storedInterventions) {
+        interventions.value = JSON.parse(storedInterventions);
+      }
+    };
+
+    // Sauvegarde des interventions dans le localStorage
+    const saveInterventions = () => {
+      localStorage.setItem('interventions', JSON.stringify(interventions.value));
+    };
+
+    const formatDate = (dateString) => {
+  if (!dateString) return "-";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
+
+    const toggleCrops = (parcelId) => {
+      showCrops.value[parcelId] = !showCrops.value[parcelId];
+    };
+
+    const showAddCropDialog = (parcelId) => {
+      newCrop.value.parcel_id = parcelId;
+      showDialogAddCrop.value = true;
+    };
+
+    const addCrop = async () => {
+      try {
+        await axios.post('http://localhost:3001/crops', newCrop.value);
+        await fetchParcelles(user.value.id);
+        showDialogAddCrop.value = false;
+        newCrop.value = { name: '', planting_date: '', harvest_date: '' };
+      } catch (err) {
+        console.error('Erreur lors de l\'ajout de la culture :', err);
+      }
+    };
+
+    const showEditCropDialog = (crop) => {
+      editCrop.value = { ...crop }; // Clone the crop object to edit
+      showDialogEditCrop.value = true;
+    };
+
+    const updateCrop = async () => {
+      try {
+        await axios.put(`http://localhost:3001/crops/${editCrop.value.id}`, editCrop.value);
+        await fetchParcelles(user.value.id);
+        showDialogEditCrop.value = false;
+      } catch (err) {
+        console.error('Erreur lors de la modification de la culture :', err);
+      }
+    };
+
+    const confirmDeleteCrop = (cropId) => {
+      const confirmation = confirm("Êtes-vous sûr de vouloir supprimer cette culture ?");
+      if (confirmation) {
+        deleteCrop(cropId);
+      }
+    };
+
+    const deleteCrop = async (cropId) => {
+      try {
+        await axios.delete(`http://localhost:3001/api/crops/${cropId}`);
+        await fetchParcelles(user.value.id);
+      } catch (err) {
+        console.error('Erreur lors de la suppression de la culture :', err);
+      }
+    };
+
+    const showFollowCropDialog = async (crop) => {
+      selectedCrop.value = crop;
+      await fetchActivities(crop.id);
+      showDialogFollowCrop.value = true;
+    };
+
+    const fetchActivities = async (cropId) => {
+      try {
+        const response = await axios.get(`http://localhost:3001/activities/${cropId}`);
+        selectedCrop.value.activities = response.data;
+
+        // Charger l'état des interventions
+        loadInterventions();
+        selectedCrop.value.activities.forEach(activity => {
+          activity.selected = interventions.value.some(intervention => intervention.id === activity.id);
+        });
+      } catch (err) {
+        console.error('Erreur lors de la récupération des activités :', err);
+        selectedCrop.value.activities = [];
+      }
+    };
+
+    const showAddActivityDialog = (cropId) => {
+      newActivity.value.crop_id = cropId;
+      showDialogAddActivity.value = true;
+    };
+
+    const addActivity = async () => {
+      try {
+        await axios.post('http://localhost:3001/activities', newActivity.value);
+        await fetchActivities(newActivity.value.crop_id);
+        showDialogAddActivity.value = false;
+        newActivity.value = { name: '', date: '', details: '' };
+      } catch (err) {
+        console.error('Erreur lors de l\'ajout de l\'activité :', err);
+      }
+    };
+
+    const showEditActivityDialog = (activity) => {
+      editActivity.value = { ...activity }; // Clone the activity object to edit
+      showDialogEditActivity.value = true;
+    };
+
+    const updateActivity = async () => {
+      try {
+        await axios.put(`http://localhost:3001/activities/${editActivity.value.id}`, editActivity.value);
+        await fetchActivities(selectedCrop.value.id);
+        showDialogEditActivity.value = false;
+      } catch (err) {
+        console.error('Erreur lors de la modification de l\'activité :', err);
+      }
+    };
+
+    const confirmDeleteActivity = (activityId) => {
+      const confirmation = confirm("Êtes-vous sûr de vouloir supprimer cette activité ?");
+      if (confirmation) {
+        deleteActivity(activityId);
+      }
+    };
+
+    const deleteActivity = async (activityId) => {
+      try {
+        await axios.delete(`http://localhost:3001/activities/${activityId}`);
+        await fetchActivities(selectedCrop.value.id);
+      } catch (err) {
+        console.error('Erreur lors de la suppression de l\'activité :', err);
+      }
+    };
+
+    const updateIntervention = async (activity) => {
   try {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      router.push('/users/connexion');
-      return;
+    if (activity.selected) {
+      await axios.post("http://localhost:3001/interventions", { activity_id: activity.id });
+    } else {
+      await axios.delete(`http://localhost:3001/interventions/${activity.id}`);
     }
+  } catch (err) {
+    console.error("Erreur lors de la mise à jour de l'intervention :", err);
+  }
+};
 
-    const response = await axios.get('http://localhost:3001/api/user-profile', {
-      headers: {
-        Authorization: `Bearer ${token}`
+
+    const fetchParcelles = async (userId) => {
+      try {
+        const response = await axios.get(`http://localhost:3001/parcelles/${userId}`);
+        parcelles.value = await Promise.all(
+          response.data.map(async (parcel) => {
+            const crops = await fetchCrops(parcel.id);
+            return {
+              ...parcel,
+              crops,
+            };
+          })
+        );
+      } catch (error) {
+        console.error('Erreur lors de la récupération des parcelles :', error);
+      }
+    };
+
+    const fetchCrops = async (parcelId) => {
+      try {
+        const response = await axios.get(`http://localhost:3001/api/crops/${parcelId}`);
+        return response.data;
+      } catch (err) {
+        console.error('Erreur lors de la récupération des cultures :', err);
+        return [];
+      }
+    };
+
+    onMounted(async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+
+        if (!token) {
+          router.push("/users/connexion");
+          return;
+        }
+
+        const response = await axios.get("http://localhost:3001/api/user-profile", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        user.value = response.data;
+        await fetchParcelles(user.value.id);
+        loadInterventions(); // Charger les interventions lors du montage
+      } catch (err) {
+        console.error("Erreur lors de la récupération des informations de l'utilisateur:", err);
+        error.value = "Erreur lors de la récupération des informations.";
+        router.push("/users/connexion");
       }
     });
 
-    user.value = response.data;
-  } catch (err) {
-    console.error('Erreur lors de la récupération des informations de l\'utilisateur:', err);
-    error.value = 'Erreur lors de la récupération des informations.';
-    router.push('/users/connexion');
+    return {
+      user,
+      parcelles,
+      showDialogAddCrop,
+      newCrop,
+      addCrop,
+      showAddCropDialog,
+      showEditCropDialog,
+      editCrop,
+      updateCrop,
+      confirmDeleteCrop,
+      deleteCrop,
+      showFollowCropDialog,
+      selectedCrop,
+      showDialogFollowCrop,
+      showDialogAddActivity,
+      newActivity,
+      addActivity,
+      showEditActivityDialog,
+      editActivity,
+      updateActivity,
+      confirmDeleteActivity,
+      deleteActivity,
+      toggleCrops,
+      showCrops,
+      formatDate,
+      showDialogEditCrop,
+      showDialogEditActivity,
+      showAddActivityDialog,
+      interventions,
+      updateIntervention
+    };
   }
-}
-
-function changePassword() {
-  alert('Changer le mot de passe');
-}
-
-function logout() {
-  alert('Déconnexion');
-}
-
-onMounted(() => {
-  fetchUserData();
-});
+};
 </script>
 
-<style scoped>
-html, body {
-  height: 100%;
-  margin: 0;
-}
-
-.profile-container {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  padding: 16px;
-  background-color: #f5f5f5;
-}
-
-.profile-header {
+<style>
+.custom-panel-header {
+  height: 100px;
+  width: 100%;
+  font-size: 1.1rem;
+  padding: 0 16px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  margin-bottom: 16px;
-}
-
-.profile-avatar {
-  margin-right: 16px;
-}
-
-.profile-info {
-  flex: 1;
-}
-
-.profile-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.profile-card {
-  margin-bottom: 16px;
-}
-
-.btn-green {
-  background-color: #4CAF50;
-  color: white;
-  width: 500px;
-  margin-top: 10px;
-  margin-bottom: 20px;
-}
-
-.btn-red {
-  background-color: #f44336;
-  color: white;
-  width: 500px;
-  margin-left: 20px;
 }
 </style>

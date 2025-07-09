@@ -22,6 +22,12 @@
                 <!-- Alert Messages -->
                 <v-alert v-if="alertMessage" :type="alertType" class="mb-4" dismissible>
                   {{ alertMessage }}
+                  <div v-if="remainingAttempts !== null">
+                    Tentatives restantes : {{ remainingAttempts }}
+                  </div>
+                  <div v-if="lockTimeRemaining !== null">
+                    Temps avant réessai : {{ lockTimeRemaining }} secondes
+                  </div>
                 </v-alert>
                 
                 <v-form @submit.prevent="submitForm">
@@ -31,6 +37,9 @@
                     type="email"
                     required
                     class="animated-input"
+                    :error-messages="emailErrors"
+                    @input="v$.form.email.$touch()"
+                    @blur="v$.form.email.$touch()"
                   ></v-text-field>
                   <v-text-field
                     v-model="form.password"
@@ -38,12 +47,14 @@
                     type="password"
                     required
                     class="animated-input"
+                    :error-messages="passwordErrors"
+                    @input="v$.form.password.$touch()"
+                    @blur="v$.form.password.$touch()"
                   ></v-text-field>
                   <v-btn type="submit" color="primary" large class="animated-btn">Se Connecter</v-btn>
                   <v-btn @click="resetPassword" class="forgot-password-btn">Mot de passe oublié?</v-btn>
                 </v-form>
                 <v-divider class="my-4"></v-divider>
-               
               </v-card>
             </v-col>
           </v-row>
@@ -54,59 +65,117 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import axios from 'axios'
-import AOS from 'aos'
-import 'aos/dist/aos.css'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed } from 'vue';
+import axios from 'axios';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
+import { useRouter } from 'vue-router';
+import { useVuelidate } from '@vuelidate/core';
+import { required, email } from '@vuelidate/validators';
 
-const router = useRouter()
+const router = useRouter();
+
 const form = ref({
   email: '',
-  password: ''
-})
+  password: '',
+});
 
-const alertMessage = ref('')
-const alertType = ref('') // 'success', 'error', or 'info'
+const rules = computed(() => ({
+  email: { required, email },
+  password: { required },
+}));
+
+const v$ = useVuelidate(rules, form);
+
+const alertMessage = ref('');
+const alertType = ref(''); // 'success', 'error', or 'info'
+const remainingAttempts = ref(null); // Nombre de tentatives restantes
+const lockTimeRemaining = ref(null); // Temps restant avant réessai
+
+const emailErrors = computed(() => {
+  if (!v$.value || !v$.value.form || !v$.value.form.email) return [];
+  const errors = [];
+  if (!v$.value.form.email.$dirty) return errors;
+  !v$.value.form.email.required && errors.push('Email est requis.');
+  !v$.value.form.email.email && errors.push('L’email doit être valide.');
+  return errors;
+});
+
+const passwordErrors = computed(() => {
+  if (!v$.value || !v$.value.form || !v$.value.form.password) return [];
+  const errors = [];
+  if (!v$.value.form.password.$dirty) return errors;
+  !v$.value.form.password.required && errors.push('Mot de passe requis.');
+  return errors;
+});
 
 function submitForm() {
+  v$.value.$touch();
+  if (v$.value.$invalid) {
+    alertMessage.value = 'Veuillez remplir tous les champs correctement.';
+    alertType.value = 'error';
+    return;
+  }
+
   axios.post('http://localhost:3001/api/login', form.value)
     .then(response => {
-      // Stocker le token dans localStorage
       localStorage.setItem('authToken', response.data.token);
-
-      // Afficher un message de succès et rediriger vers la page de profil
       alertMessage.value = 'Connexion réussie!';
       alertType.value = 'success';
-      setTimeout(() => router.push('/users/dashbord'), 1000); // Rediriger vers la page de profil
+      remainingAttempts.value = null; // Réinitialiser le compteur
+      lockTimeRemaining.value = null; // Réinitialiser le temps de blocage
+      setTimeout(() => router.push('/users/dashbord'), 1000);
     })
     .catch(error => {
-      alertMessage.value = 'Mot de passe ou email incorrect';
+      if (error.response) {
+        if (error.response.status === 403) {
+          // Compte bloqué
+          alertMessage.value = error.response.data.message;
+          if (error.response.data.lockedUntil) {
+            const lockedUntil = new Date(error.response.data.lockedUntil);
+            startLockTimer(lockedUntil);
+          }
+        } else if (error.response.status === 401) {
+          // Mot de passe incorrect
+          alertMessage.value = 'Mot de passe ou email incorrect';
+          if (error.response.data.remainingAttempts !== undefined) {
+            remainingAttempts.value = error.response.data.remainingAttempts; // Afficher les tentatives restantes
+          }
+        }
+      } else {
+        // Erreur réseau ou autre
+        alertMessage.value = 'Une erreur est survenue. Veuillez réessayer.';
+      }
       alertType.value = 'error';
     });
 }
 
+function startLockTimer(lockedUntil) {
+  const interval = setInterval(() => {
+    const now = new Date();
+    const timeDiff = Math.floor((lockedUntil - now) / 1000); // Temps restant en secondes
+    if (timeDiff <= 0) {
+      clearInterval(interval);
+      lockTimeRemaining.value = null;
+      alertMessage.value = 'Vous pouvez réessayer maintenant.';
+    } else {
+      lockTimeRemaining.value = timeDiff;
+    }
+  }, 1000);
+}
 
 function resetPassword() {
-  alertMessage.value = 'Réinitialisation du mot de passe'
-  alertType.value = 'info'
-  setTimeout(() => router.push('/users/passwd'), 1000) 
-}
-
-function loginWithGoogle() {
-  alertMessage.value = 'Connexion avec Google'
-  alertType.value = 'info'
-}
-
-function loginWithFacebook() {
-  alertMessage.value = 'Connexion avec Facebook'
-  alertType.value = 'info'
+  alertMessage.value = 'Réinitialisation du mot de passe';
+  alertType.value = 'info';
+  setTimeout(() => router.push('/users/passwd'), 1000);
 }
 
 onMounted(() => {
-  AOS.init({ duration: 1000 })
-})
+  AOS.init({ duration: 1000 });
+});
 </script>
+
+
 
 <style scoped>
 .login-page {

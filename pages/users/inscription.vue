@@ -59,58 +59,84 @@
           </v-row>
         </v-col>
       </v-row>
+
+      <!-- Error Dialog -->
+      <v-dialog v-model="errorDialog" max-width="500px">
+        <v-card>
+          <v-card-title class="text-h5">Erreur</v-card-title>
+          <v-card-text>
+            <ul>
+              <li v-for="(error, index) in errorMessages" :key="index">{{ error }}</li>
+            </ul>
+          </v-card-text>
+          <v-card-actions>
+            <v-btn color="red darken-1" text @click="errorDialog = false">Fermer</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
     </v-container>
   </v-app>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import axios from 'axios'
-import AOS from 'aos'
-import 'aos/dist/aos.css'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue';
+import axios from 'axios';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
+import { useRouter } from 'vue-router';
 
-const router = useRouter()
-
+const router = useRouter();
 const form = ref({
   firstName: '',
   lastName: '',
   email: '',
   password: '',
-  confirmPassword: ''
-})
+  confirmPassword: '',
+});
 
-function submitForm() {
-  // Validation simple des mots de passe
+const errorDialog = ref(false);
+const errorMessages = ref([]);
+
+async function submitForm() {
+  errorMessages.value = [];
+
+  // Validation des champs
+  if (!form.value.firstName || !form.value.lastName || !form.value.email || !form.value.password || !form.value.confirmPassword) {
+    errorMessages.value.push('Tous les champs sont requis.');
+  }
   if (form.value.password !== form.value.confirmPassword) {
-    alert('Les mots de passe ne correspondent pas!')
-    return
+    errorMessages.value.push('Les mots de passe ne correspondent pas.');
+  }
+  if (form.value.password.length < 8) {
+    errorMessages.value.push('Le mot de passe doit contenir au moins 8 caractères.');
+  }
+  const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*]).{8,}$/;
+  if (!passwordRegex.test(form.value.password)) {
+    errorMessages.value.push('Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.');
   }
 
-  // Préparer les données du formulaire
-  const data = {
-    firstName: form.value.firstName,
-    lastName: form.value.lastName,
-    email: form.value.email,
-    password: form.value.password,
-    confirmPassword: form.value.confirmPassword
+  if (errorMessages.value.length > 0) {
+    errorDialog.value = true;
+    return;
   }
 
-  // Envoyer les données via Axios
-  axios.post('http://localhost:3001/api/register', data)
-    .then(response => {
-      alert('Inscription réussie!')
-      router.push('/users/connexion')  // Correction du chemin de redirection
-    })
-    .catch(error => {
-      console.error('Erreur lors de l\'inscription:', error)
-      alert('Une erreur est survenue. Veuillez réessayer.')
-    })
+  try {
+    const response = await axios.post('http://localhost:3001/api/register', form.value);
+    alert('Inscription réussie !');
+    router.push('/users/connexion');
+  } catch (error) {
+    if (error.response && error.response.data && error.response.data.message) {
+      errorMessages.value.push(error.response.data.message);
+    } else {
+      errorMessages.value.push('Une erreur est survenue. Veuillez réessayer.');
+    }
+    errorDialog.value = true;
+  }
 }
 
 onMounted(() => {
-  AOS.init({ duration: 1000 })
-})
+  AOS.init({ duration: 1000 });
+});
 </script>
 
 <style scoped>

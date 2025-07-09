@@ -224,7 +224,12 @@ export default {
 .animated-section {
   animation: fadeIn 1s ease-in-out;
 }
-
+.headline {
+  font-size: 1.3em;
+}
+p{
+  font-size: 1.2em;
+}
 @keyframes fadeIn {
   from {
     opacity: 0;

@@ -51,7 +51,7 @@ export default {
       this.$router.push("/users/connexion");
     },
     navigateToHome() {
-      this.$router.push("/"); // Remplacez '/' par l'URL de la page d'accueil
+      this.$router.push("/Accueil"); // Remplacez '/' par l'URL de la page d'accueil
     }
   }
 };

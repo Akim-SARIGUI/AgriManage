@@ -4,6 +4,11 @@
       Gestion des Produits
     </v-card-title>
 
+    <!-- Bouton pour ajouter un nouveau produit -->
+    <v-btn color="success" class="mb-4" @click="openAddDialog">
+      <v-icon>mdi-plus</v-icon> Ajouter un nouveau produit
+    </v-btn>
+
     <!-- Recherche de produits -->
     <v-text-field
       v-model="search"
@@ -19,11 +24,16 @@
       item-key="id"
       class="mb-4"
     >
+      <template v-slot:item.status="{ item }">
+        <v-icon v-if="item.quantity < CRITICAL_QUANTITY" color="error">mdi-alert</v-icon>
+        <span v-else>-</span>
+      </template>
+
       <template v-slot:item.actions="{ item }">
-        <v-btn class="ml-4" color="primary" @click="selectProduct(item)">
+        <v-btn class="ml-4" color="primary" @click="openEditDialog(item)">
           <v-icon>mdi-pencil</v-icon>Modifier
         </v-btn>
-        <v-btn class="ml-4" color="error" @click="confirmDelete(item.id)">
+        <v-btn class="ml-4" color="error" @click="openDeleteDialog(item)">
           <v-icon>mdi-delete</v-icon>Supprimer
         </v-btn>
         <v-btn class="ml-4" color="success" :title="'Ajouter ' + item.name" @click="handleEntry(item)">
@@ -40,100 +50,255 @@
       </template>
     </v-data-table>
 
-    <!-- Formulaire pour ajouter ou modifier un produit -->
-    <v-form @submit.prevent="saveProduct">
-      <v-text-field
-        v-model="newProduct.name"
-        label="Nom du Produit"
-        outlined
-        required
-      ></v-text-field>
-      <v-text-field
-        v-model.number="newProduct.quantity"
-        label="Quantité"
-        type="number"
-        min="0"
-        outlined
-        required
-      ></v-text-field>
-      <v-text-field
-        v-model="newProduct.unit"
-        label="Unité de Mesure"
-        outlined
-        required
-      ></v-text-field>
-      <div class="d-flex justify-space-between">
-        <v-btn type="submit" color="success">{{ selectedProductId ? 'Modifier' : 'Ajouter' }}</v-btn>
-        <v-btn @click="clearForm" color="error">Annuler</v-btn>
-      </div>
-    </v-form>
+    <!-- Boîte de dialogue pour ajouter un nouveau produit -->
+    <v-dialog v-model="addDialog.visible" max-width="500">
+      <v-card>
+        <v-card-title class="text-h6">Ajouter un nouveau produit</v-card-title>
+        <v-card-text>
+          <v-form @submit.prevent="saveProduct">
+            <v-text-field
+              v-model="newProduct.name"
+              label="Nom du Produit"
+              outlined
+              required
+            ></v-text-field>
+            <v-text-field
+              v-model.number="newProduct.quantity"
+              label="Quantité"
+              type="number"
+              min="0"
+              outlined
+              required
+            ></v-text-field>
+            <v-text-field
+              v-model="newProduct.unit"
+              label="Unité de Mesure"
+              outlined
+              required
+            ></v-text-field>
+            <div class="d-flex justify-space-between">
+              <v-btn type="submit" color="success">Ajouter</v-btn>
+              <v-btn @click="addDialog.visible = false" color="error">Annuler</v-btn>
+            </div>
+          </v-form>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
 
-    <!-- Alertes -->
-    <v-alert v-if="alerts.productExists" type="error" outlined class="mt-4">
-      Ce produit existe déjà !
-    </v-alert>
-    <v-alert v-if="alerts.invalidName" type="error" outlined class="mt-4">
-      Nom de produit invalide ! Veuillez entrer un nom valide.
-    </v-alert>
-    <v-alert v-if="alerts.invalidQuantity" type="error" outlined class="mt-4">
-      Quantité invalide ! Veuillez entrer une quantité supérieure à zéro.
-    </v-alert>
-    <v-alert v-if="alerts.successMessage" type="success" outlined class="mt-4">
-      Produit sauvegardé avec succès !
-    </v-alert>
+    <!-- Boîte de dialogue pour modifier un produit -->
+    <v-dialog v-model="editDialog.visible" max-width="500">
+      <v-card>
+        <v-card-title class="text-h6">Modifier le produit</v-card-title>
+        <v-card-text>
+          <v-form @submit.prevent="saveProduct">
+            <v-text-field
+              v-model="newProduct.name"
+              label="Nom du Produit"
+              outlined
+              required
+            ></v-text-field>
+            <v-text-field
+              v-model.number="newProduct.quantity"
+              label="Quantité"
+              type="number"
+              min="0"
+              outlined
+              required
+            ></v-text-field>
+            <v-text-field
+              v-model="newProduct.unit"
+              label="Unité de Mesure"
+              outlined
+              required
+            ></v-text-field>
+            <div class="d-flex justify-space-between">
+              <v-btn type="submit" color="success">Modifier</v-btn>
+              <v-btn @click="editDialog.visible = false" color="error">Annuler</v-btn>
+            </div>
+          </v-form>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+
+    <!-- Boîte de dialogue pour la suppression -->
+    <v-dialog v-model="deleteDialog.visible" max-width="500">
+      <v-card>
+        <v-card-title class="text-error">Supprimer le produit</v-card-title>
+        <v-card-text>
+          Êtes-vous sûr de vouloir supprimer "{{ deleteDialog.selectedProduct?.name }}" ?
+        </v-card-text>
+        <v-card-actions>
+          <v-btn color="error" @click="confirmDelete">Confirmer</v-btn>
+          <v-btn color="primary" @click="deleteDialog.visible = false">Annuler</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Boîte de dialogue pour les messages -->
+    <v-dialog v-model="dialog.visible" max-width="500">
+      <v-card>
+        <v-card-title :class="`text-${dialog.type}`">
+          {{ dialog.title }}
+        </v-card-title>
+        <v-card-text>
+          {{ dialog.message }}
+        </v-card-text>
+        <v-card-actions>
+          <v-btn v-if="dialog.action" color="primary" @click="dialog.action.handler">
+            {{ dialog.action.text }}
+          </v-btn>
+          <v-btn color="error" @click="dialog.visible = false">Fermer</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Dialogue pour l'entrée de produits -->
+    <v-dialog v-model="entryDialog.visible" max-width="500">
+      <v-card>
+        <v-card-title class="text-h6">Entrer des produits</v-card-title>
+        <v-card-text>
+          <v-text-field
+            v-model.number="entryDialog.quantity"
+            label="Quantité à ajouter"
+            type="number"
+            min="1"
+            outlined
+          ></v-text-field>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn color="primary" @click="handleEntryConfirm">Confirmer</v-btn>
+          <v-btn color="error" @click="entryDialog.visible = false">Annuler</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Dialogue pour la sortie de produits -->
+    <v-dialog v-model="exitDialog.visible" max-width="500">
+      <v-card>
+        <v-card-title class="text-h6">Sortie de produits</v-card-title>
+        <v-card-text>
+          <v-text-field
+            v-model.number="exitDialog.quantity"
+            label="Quantité à retirer"
+            type="number"
+            min="1"
+            outlined
+          ></v-text-field>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn color="primary" @click="handleExitConfirm">Confirmer</v-btn>
+          <v-btn color="error" @click="exitDialog.visible = false">Annuler</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-card>
 </template>
+
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
-import { validate as validateUUID } from 'uuid'
+import { validate as validateUUID } from 'uuid';
+import { useRouter } from 'vue-router';
 
-// État local pour gérer les produits
-const router = useRouter()
-const userId = ref(null)
+// Constantes
+const CRITICAL_QUANTITY = 10; // Seuil critique
+
+// Données réactives
 const search = ref('');
 const newProduct = ref({ name: '', quantity: 0, unit: '' });
 const selectedProductId = ref(null);
-const alerts = ref({
-  productExists: false,
-  invalidName: false,
-  invalidQuantity: false,
-  successMessage: false,
+const products = ref([]);
+const historique = ref([]); // Historique des actions
+const dialog = ref({
+  visible: false,
+  type: '', // Type de dialogue (success, error, warning)
+  title: '', // Titre du dialogue
+  message: '', // Message à afficher
+  action: null, // Action supplémentaire (bouton avec handler)
+});
+const deleteDialog = ref({
+  visible: false,
+  selectedProduct: null, // Produit sélectionné pour la suppression
+});
+const existingProduct = ref(null); // Produit existant pour la suggestion
+
+// Dialogues pour ajouter et modifier
+const addDialog = ref({
+  visible: false,
 });
 
-// Charger les produits avec Axios
-const products = ref([]);
+const editDialog = ref({
+  visible: false,
+});
 
+// Dialogues pour entrée et sortie
+const entryDialog = ref({
+  visible: false,
+  product: null, // Produit sélectionné pour l'entrée
+  quantity: 1, // Quantité par défaut
+});
+
+const exitDialog = ref({
+  visible: false,
+  product: null, // Produit sélectionné pour la sortie
+  quantity: 1, // Quantité par défaut
+});
+
+const router = useRouter();
+const userId = ref(null);
+
+// Charger les produits avec Axios
 const loadProducts = async () => {
   try {
-    const token = localStorage.getItem('authToken')
+    const token = localStorage.getItem('authToken');
 
     if (!token) {
-      router.push('/users/connexion')
-      return
+      router.push('/users/connexion');
+      return;
     }
 
     const response = await axios.get('http://localhost:3001/api/user-profile', {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-    const userIdFromServer = response.data.id
+    userId.value = response.data.id;
 
-    // Vérification et conversion en UUID valide
-    if (!validateUUID(userIdFromServer)) {
-      console.error("ID utilisateur non valide pour UUID:", userIdFromServer)
-      return
+    if (!validateUUID(userId.value)) {
+      console.error("ID utilisateur non valide pour UUID:", userId.value);
+      return;
     }
 
-    userId.value = userIdFromServer
-    console.log("User ID:", userId.value)
+    const productResponse = await axios.get(`http://localhost:3001/api/products/${userId.value}`);
+    products.value = productResponse.data;
 
-    const Produitsresponse = await axios.get(`http://localhost:3001/api/products/${userId.value}`);
-    products.value = Produitsresponse.data;
+    // Vérifier les produits critiques
+    const criticalProducts = products.value.filter(product => product.quantity < CRITICAL_QUANTITY);
+    if (criticalProducts.length > 0) {
+      dialog.value = {
+        visible: true,
+        type: 'error',
+        title: 'Alerte',
+        message: `Attention, ${criticalProducts.length} produit(s) ont une quantité critique !`,
+      };
+    }
   } catch (error) {
     console.error('Erreur lors du chargement des produits:', error);
+    dialog.value = {
+      visible: true,
+      type: 'error',
+      title: 'Erreur',
+      message: 'Erreur de connexion au serveur.',
+    };
+  }
+};
+
+// Charger l'historique
+const loadHistorique = async () => {
+  try {
+    const response = await axios.get(`http://localhost:3001/historique/${userId.value}`);
+    historique.value = response.data;
+  } catch (error) {
+    console.error('Erreur lors du chargement de l\'historique:', error);
   }
 };
 
@@ -141,17 +306,28 @@ const loadProducts = async () => {
 const filteredProducts = computed(() =>
   products.value.filter(product =>
     product.name.toLowerCase().includes(search.value.toLowerCase())
-  )
-);
+));
 
 // En-têtes du tableau
 const headers = [
   { text: 'Nom', value: 'name' },
   { text: 'Quantité', value: 'quantity' },
   { text: 'Unité', value: 'unit' },
-  { text: 'État', value: 'status' },
+  { text: 'Statut', value: 'status', sortable: false }, // Nouvelle colonne pour le statut
   { text: 'Actions', value: 'actions', sortable: false }
 ];
+
+// Ouvrir le dialogue pour ajouter un produit
+const openAddDialog = () => {
+  clearForm();
+  addDialog.value.visible = true;
+};
+
+// Ouvrir le dialogue pour modifier un produit
+const openEditDialog = (product) => {
+  selectProduct(product);
+  editDialog.value.visible = true;
+};
 
 // Sélectionner un produit pour modification
 const selectProduct = (product) => {
@@ -160,50 +336,91 @@ const selectProduct = (product) => {
 };
 
 // Confirmer la suppression d'un produit
-const confirmDelete = async (id) => {
-  if (confirm('Êtes-vous sûr de vouloir supprimer cet élément ?')) {
-    try {
-      await axios.delete(`http://localhost:3001/api/products/${id}`);
-      loadProducts(); // Recharge les données après suppression
-    } catch (error) {
-      console.error('Erreur lors de la suppression du produit:', error);
-    }
+const confirmDelete = async () => {
+  const product = deleteDialog.value.selectedProduct;
+  if (!product) return;
+
+  try {
+    await axios.delete(`http://localhost:3001/api/products/${product.id}`);
+    await loadProducts(); // Recharger les produits après suppression
+    dialog.value = {
+      visible: true,
+      type: 'success',
+      title: 'Succès',
+      message: 'Produit supprimé avec succès !',
+    };
+  } catch (error) {
+    console.error('Erreur lors de la suppression du produit:', error);
+    dialog.value = {
+      visible: true,
+      type: 'error',
+      title: 'Erreur',
+      message: "Impossible de supprimer le produit.",
+    };
   }
+  deleteDialog.value.visible = false; // Fermer la boîte de dialogue
 };
 
-// Formatage de la date
-function formatDate(dateString) {
-  const date = new Date(dateString);
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
-}
+// Vérifier si le produit existe déjà
+const checkExistingProduct = () => {
+  const existingProduct = products.value.find(
+    product => product.name.toLowerCase() === newProduct.value.name.toLowerCase()
+  );
+  if (existingProduct) {
+    dialog.value = {
+      visible: true,
+      type: 'warning',
+      title: 'Produit existant',
+      message: `Le produit "${newProduct.value.name}" existe déjà. Souhaitez-vous ajouter une nouvelle entrée ?`,
+      action: {
+        text: 'Faire une entrée',
+        handler: () => {
+          dialog.value.visible = false; // Fermer la boîte de dialogue
+          setTimeout(() => {
+            handleEntry(existingProduct); // Ouvrir la boîte de dialogue d'entrée
+          }, 300); // Petite attente pour éviter un bug d'affichage
+        },
+      },
+    };
+    return true; // Retourne true si le produit existe
+  }
+  return false; // Retourne false si le produit n'existe pas
+};
 
 // Sauvegarder le produit (ajouter ou modifier)
 const saveProduct = async () => {
-  if (newProduct.value.name === '') {
-    alerts.value.invalidName = true;
-    return;
-  } else if (newProduct.value.quantity <= 0) {
-    alerts.value.invalidQuantity = true;
-    return;
-  }
+  // Vérifier si le produit existe déjà (sauf en mode édition)
+  if (!selectedProductId.value && checkExistingProduct()) return;
 
   try {
-    newProduct.value.user_id = userId.value
-    if (selectedProductId.value) {
-      // Mise à jour du produit existant
-      await axios.put(`http://localhost:3001/api/products/${selectedProductId.value}`, newProduct.value);
-      const index = products.value.findIndex(p => p.id === selectedProductId.value);
-      if (index !== -1) {
-        products.value[index] = newProduct.value; // Mise à jour à l'index
-      }
-    } else {
-      // Création d'un nouveau produit
-      const response = await axios.post('http://localhost:3001/api/products', newProduct.value);
-      products.value.unshift(response.data); // Ajout au début du tableau
+    if (!newProduct.value.name || !newProduct.value.quantity || !newProduct.value.unit) {
+      dialog.value = {
+        visible: true,
+        type: 'error',
+        title: 'Erreur',
+        message: 'Veuillez remplir tous les champs obligatoires.',
+      };
+      return;
     }
+
+    if (isNaN(newProduct.value.quantity) || newProduct.value.quantity < 0) {
+      dialog.value = {
+        visible: true,
+        type: 'error',
+        title: 'Erreur',
+        message: 'La quantité doit être un nombre positif.',
+      };
+      return;
+    }
+
+    newProduct.value.user_id = userId.value;
+
+    if (selectedProductId.value) {
+      await axios.put(`http://localhost:3001/api/products/${selectedProductId.value}`, newProduct.value);
+    } else {
+      await axios.post('http://localhost:3001/api/products', newProduct.value);
+    }
+
     await axios.post('http://localhost:3001/historique', {
       user_id: userId.value,
       type: 'produits',
@@ -211,81 +428,177 @@ const saveProduct = async () => {
       quantity: newProduct.value.quantity,
       unit: newProduct.value.unit,
       niveau: selectedProductId.value ? 'modifier' : 'ajouter',
-      date: formatDate(new Date())
+      date: new Date().toISOString(),
     });
+
     clearForm();
-    alerts.value.successMessage = true;
-    loadProducts(); // Recharge les données après sauvegarde
+    loadProducts();
+
+    // Vérifier si la quantité est critique
+    if (newProduct.value.quantity < CRITICAL_QUANTITY) {
+      dialog.value = {
+        visible: true,
+        type: 'error',
+        title: 'Alerte',
+        message: `La quantité de "${newProduct.value.name}" est critique !`,
+      };
+    } else if (newProduct.value.quantity === 0) {
+      dialog.value = {
+        visible: true,
+        type: 'warning',
+        title: 'Alerte',
+        message: `Le produit "${newProduct.value.name}" est maintenant terminé !`,
+      };
+    } else {
+      dialog.value = {
+        visible: true,
+        type: 'success',
+        title: 'Succès',
+        message: 'Produit sauvegardé avec succès !',
+      };
+    }
   } catch (error) {
     console.error('Erreur lors de la sauvegarde du produit:', error);
+    dialog.value = {
+      visible: true,
+      type: 'error',
+      title: 'Erreur',
+      message: "Impossible d'enregistrer le produit.",
+    };
   }
+};
+
+// Gérer l'entrée de produits
+const handleEntry = (product) => {
+  entryDialog.value = {
+    visible: true,
+    product: product,
+    quantity: 0, // Réinitialiser la quantité par défaut
+  };
+};
+
+const handleEntryConfirm = async () => {
+  const { product, quantity } = entryDialog.value;
+
+  if (quantity > 0) {
+    try {
+      const currentQuantity = parseInt(product.quantity, 10);
+      if (isNaN(currentQuantity)) {
+        dialog.value = { visible: true, type: 'error', title: 'Erreur', message: 'La quantité actuelle est invalide.' };
+        return;
+      }
+
+      const newQuantity = currentQuantity + quantity;
+      const updatedProduct = { ...product, quantity: newQuantity };
+
+      await axios.put(`http://localhost:3001/api/products/${product.id}`, updatedProduct);
+      await axios.post('http://localhost:3001/historique', {
+        user_id: userId.value,
+        type: 'produits',
+        name: product.name,
+        quantity,
+        unit: product.unit,
+        niveau: 'entrer',
+        date: new Date().toISOString(),
+      });
+
+      // Mettre à jour le produit dans la liste
+      const index = products.value.findIndex((p) => p.id === product.id);
+      if (index !== -1) products.value[index] = updatedProduct;
+
+      await loadHistorique(); // Recharger l'historique
+      dialog.value = { visible: true, type: 'success', title: 'Succès', message: 'Quantité ajoutée avec succès !' };
+    } catch (error) {
+      console.error("Erreur lors de l'entrée du produit:", error);
+      dialog.value = { visible: true, type: 'error', title: 'Erreur', message: "Impossible d'ajouter la quantité." };
+    }
+  } else {
+    dialog.value = { visible: true, type: 'error', title: 'Erreur', message: 'Quantité invalide !' };
+  }
+
+  entryDialog.value.visible = false; // Fermer le dialogue
+};
+
+// Gérer la sortie de produits
+const handleExit = (product) => {
+  exitDialog.value = {
+    visible: true,
+    product: product,
+    quantity: 0, // Réinitialiser la quantité par défaut
+  };
+};
+
+// Ouvrir la boîte de dialogue pour la suppression
+const openDeleteDialog = (product) => {
+  deleteDialog.value.selectedProduct = product;
+  deleteDialog.value.visible = true;
+};
+
+const handleExitConfirm = async () => {
+  const { product, quantity } = exitDialog.value;
+
+  if (quantity > 0 && quantity <= product.quantity) {
+    try {
+      const currentQuantity = parseInt(product.quantity, 10);
+      if (isNaN(currentQuantity)) {
+        dialog.value = { visible: true, type: 'error', title: 'Erreur', message: 'La quantité actuelle est invalide.' };
+        return;
+      }
+
+      const newQuantity = currentQuantity - quantity;
+      const updatedProduct = { ...product, quantity: newQuantity };
+
+      await axios.put(`http://localhost:3001/api/products/${product.id}`, updatedProduct);
+      await axios.post('http://localhost:3001/historique', {
+        user_id: userId.value,
+        type: 'produits',
+        name: product.name,
+        quantity,
+        unit: product.unit,
+        niveau: 'sortie',
+        date: new Date().toISOString(),
+      });
+
+      // Mettre à jour le produit dans la liste
+      const index = products.value.findIndex((p) => p.id === product.id);
+      if (index !== -1) products.value[index] = updatedProduct;
+
+      await loadHistorique(); // Recharger l'historique
+      dialog.value = { visible: true, type: 'success', title: 'Succès', message: 'Quantité retirée avec succès !' };
+    } catch (error) {
+      console.error("Erreur lors de la sortie du produit:", error);
+      dialog.value = { visible: true, type: 'error', title: 'Erreur', message: "Impossible de retirer la quantité." };
+    }
+  } else {
+    dialog.value = { visible: true, type: 'error', title: 'Erreur', message: 'Quantité invalide ou insuffisante !' };
+  }
+
+  exitDialog.value.visible = false; // Fermer le dialogue
 };
 
 // Réinitialiser le formulaire
 const clearForm = () => {
   newProduct.value = { name: '', quantity: 0, unit: '' };
   selectedProductId.value = null;
-  alerts.value = {
-    productExists: false,
-    invalidName: false,
-    invalidQuantity: false,
-    successMessage: false,
-  };
+  dialog.value = { visible: false, type: '', title: '', message: '' };
+  addDialog.value.visible = false;
+  editDialog.value.visible = false;
 };
 
-// Charger les produits au montage du composant
+// Charger les produits et l'historique au montage du composant
 onMounted(() => {
   loadProducts();
+  loadHistorique();
 });
-
-// Gérer l'entrée de produits
-const handleEntry = async (product) => {
-  const quantity = parseInt(prompt('Entrer la quantité à ajouter :', 0), 10);
-  if (quantity > 0) {
-    product.quantity += quantity; // Mise à jour de la quantité
-    await updateProduct(product); // Mise à jour dans le tableau
-    await axios.post('http://localhost:3001/historique', {
-      type: 'produits',
-      name: product.name,
-      quantity,
-      unit: product.unit,
-      niveau: 'entrer',
-      date: new Date()
-    });
-  } else {
-    alert('Quantité invalide !');
-  }
-};
-
-// Gérer la sortie de produits
-const handleExit = async (product) => {
-  const quantity = parseInt(prompt('Entrer la quantité à retirer :', 0), 10);
-  if (quantity > 0 && quantity <= product.quantity) {
-    product.quantity -= quantity; // Mise à jour de la quantité
-    await updateProduct(product); // Mise à jour dans le tableau
-    await axios.post('http://localhost:3001/historique', {
-      type: 'produits',
-      name: product.name,
-      quantity,
-      unit: product.unit,
-      niveau: 'sortie',
-      date: new Date()
-    });
-  } else {
-    alert('Quantité invalide ou insuffisante !');
-  }
-};
-
-// Mise à jour d'un produit
-const updateProduct = async (updatedProduct) => {
-  try {
-    await axios.put(`http://localhost:3001/api/products/${updatedProduct.id}`, updatedProduct);
-    const index = products.value.findIndex(p => p.id === updatedProduct.id);
-    if (index !== -1) {
-      products.value[index] = updatedProduct; // Mise à jour du produit
-    }
-  } catch (error) {
-    console.error('Erreur lors de la mise à jour du produit:', error);
-  }
-};
 </script>
+
+<style scoped>
+.v-data-table {
+  max-height: 500px; /* Ajustez la hauteur selon vos besoins */
+  overflow-y: auto;
+}
+
+.v-icon.error {
+  color: #ff5252; /* Couleur rouge pour l'alerte */
+}
+</style>

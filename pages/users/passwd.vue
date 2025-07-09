@@ -18,16 +18,36 @@
               <v-card class="form-card" data-aos="fade-up">
                 <v-card-title class="text-center">Mot de Passe Oublié</v-card-title>
                 <v-card-subtitle class="text-center">Entrez votre adresse email pour réinitialiser votre mot de passe</v-card-subtitle>
-                <v-form @submit.prevent="submitForm">
+
+                <!-- Messages d'erreur ou de succès -->
+                <v-alert v-if="message" :type="messageType" class="mb-4">
+                  {{ message }}
+                </v-alert>
+
+                <v-form @submit.prevent="submitForm" ref="form">
                   <v-text-field
                     v-model="form.email"
                     label="Email"
                     type="email"
+                    :rules="emailRules"
                     required
                     class="animated-input"
+                    outlined
+                    dense
                   ></v-text-field>
-                  <v-btn type="submit" color="primary" large class="animated-btn">Envoyer</v-btn>
+
+                  <v-btn
+                    type="submit"
+                    color="primary"
+                    large
+                    class="animated-btn"
+                    :loading="isLoading"
+                    :disabled="isLoading"
+                  >
+                    Envoyer
+                  </v-btn>
                 </v-form>
+
                 <v-divider class="my-4"></v-divider>
                 <v-btn @click="goToLogin" color="secondary" class="back-to-login-btn">Retour à la connexion</v-btn>
               </v-card>
@@ -40,38 +60,68 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import axios from 'axios'
-import AOS from 'aos'
-import 'aos/dist/aos.css'
-import { useRouter } from 'vue-router'
+import { ref } from 'vue';
+import axios from 'axios';
+import { useRouter } from 'vue-router';
 
-const router = useRouter()
+const router = useRouter();
+const form = ref({ email: '' });
+const isLoading = ref(false);
+const message = ref('');
+const messageType = ref('');
 
-const form = ref({
-  email: ''
-})
+const emailRules = [
+  (v) => !!v || 'L\'email est obligatoire',
+  (v) => /.+@.+\..+/.test(v) || 'L\'email doit être valide',
+];
 
-function submitForm() {
-  // Envoyer les données via Axios pour réinitialiser le mot de passe
-  axios.post('http://localhost:3001/api/send-verification-code', form.value)
-    .then(response => {
-      alert('Un email de réinitialisation a été envoyé!')
-      // Redirection ou autre action après succès
-    })
-    .catch(error => {
-      console.error('Erreur lors de la demande de réinitialisation:', error)
-      alert('Une erreur est survenue. Veuillez réessayer.')
-    })
+async function submitForm() {
+  if (!form.value.email) {
+    message.value = 'Veuillez entrer votre email.';
+    messageType.value = 'error';
+    return;
+  }
+
+  isLoading.value = true;
+  message.value = '';
+
+  try {
+    // Envoyer un objet simple avec l'email seulement
+    const response = await axios.post('http://localhost:3001/api/send-verification-code', { email: form.value.email });
+
+    message.value = 'Un email de réinitialisation a été envoyé!';
+    messageType.value = 'success';
+    router.push({ path: '/users/VerifyCode', query: { email: form.value.email } });
+    // Réinitialiser le champ email après un envoi réussi
+    form.value.email = '';
+  } catch (error) {
+    console.error('Erreur lors de la demande de réinitialisation:', error);
+    console.log('Réponse du serveur:', error.response);
+
+    if (error.response) {
+      if (error.response.status === 400) {
+        message.value = 'Veuillez remplir tous les champs requis.';
+      } else if (error.response.status === 404) {
+        message.value = 'Aucun utilisateur trouvé avec cet email.';
+      } else {
+        message.value = 'Une erreur est survenue. Veuillez réessayer.';
+      }
+    } else if (error.request) {
+      message.value = 'Une erreur réseau est survenue. Veuillez vérifier votre connexion.';
+    } else {
+      message.value = 'Une erreur inattendue est survenue.';
+    }
+    messageType.value = 'error';
+  } finally {
+    isLoading.value = false;
+  }
 }
+
+
 
 function goToLogin() {
-  router.push('/login')
+  router.push('/users/connexion');
 }
-
-onMounted(() => {
-  AOS.init({ duration: 1000 })
-})
 </script>
 
 <style scoped>

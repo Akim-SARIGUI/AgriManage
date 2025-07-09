@@ -549,7 +549,7 @@ app.get('/api/historique/:userId', async (req, res) => {
     try {
         // ✅ Récupération des entrées "ajouter" et "entrer"
         const resultEntrerAjouter = await pool.query(
-            `SELECT * FROM historique WHERE niveau IN ('ajouter', 'entrer', 'modifier') AND user_id = $1 ORDER BY date DESC`,
+            `SELECT * FROM historique WHERE niveau IN ('ajouter', 'entrer') AND user_id = $1 ORDER BY date DESC`,
             [userId]
         );
 
@@ -581,7 +581,7 @@ app.get('/api/historique/produits/:userId', async (req, res) => {
 
     try {
         const result = await pool.query(
-            `SELECT * FROM historique WHERE type = 'produits' AND user_id = $1 ORDER BY created_at DESC`,
+            `SELECT * FROM historique WHERE type = 'produits' AND user_id = $1 ORDER BY created_date DESC`,
             [userId]
         );
 
@@ -1593,7 +1593,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Vérifie le rôle et génère un token
     if (user.role === 'admin') {
-      const token = jwt.sign({ id: user.id }, 'JWT_SECRET', { expiresIn: '24h' });
+      const token = jwt.sign({ id: user.id }, 'your_jwt_secret', { expiresIn: '24h' });
       return res.json({ token, user });
     } else {
       return res.status(403).json({ message: 'Vous n\'êtes pas admin.' });
@@ -1679,94 +1679,39 @@ app.post('/api/contact-support', async (req, res) => {
   }
 
   try {
-    // Vérifiez que l'utilisateur existe
-    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [user_id]);
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Utilisateur non trouvé.' });
-    }
-
-    // Insérez le message
     const result = await pool.query(
-      'INSERT INTO user_messages (name, email, message, user_id, created_at, status) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, $5) RETURNING *',
-      [name, email, message, user_id, 'En attente']
+      'INSERT INTO user_messages (name, email, message, user_id) VALUES ($1, $2, $3, $4) RETURNING *',
+      [name, email, message, user_id]
     );
 
-    // Réponse réussie
-    res.status(201).json({
-      message: 'Message envoyé avec succès!',
-      data: result.rows[0],
-    });
+    res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Erreur lors de l\'envoi du message:', error);
-
-    // Gestion des erreurs spécifiques
-    if (error.code === '23505') { // Violation de contrainte unique
-      return res.status(400).json({ message: 'Un message identique existe déjà.' });
-    }
-
-    res.status(500).json({
-      message: 'Erreur serveur lors de l\'envoi du message.',
-      error: error.message,
-    });
+    res.status(500).json({ message: 'Erreur serveur lors de l\'envoi du message.' });
   }
 });
 
 
-// Middleware pour authentifier l'utilisateur
-const authenticateUser = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Récupère le token du header
-
-  if (!token) {
-    return res.status(401).json({ message: 'Accès refusé. Token manquant.' });
-  }
-
+// Endpoint pour récupérer tous les messages
+app.get('/api/requests', async (req, res) => {
   try {
-    // Vérifie et décode le token JWT
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    // Ajoute les informations de l'utilisateur à l'objet `req`
-    req.user = decoded;
-    next();
+    const result = await pool.query('SELECT * FROM user_messages ORDER BY created_at DESC');
+    res.json(result.rows);
   } catch (error) {
-    console.error('Erreur de vérification du token:', error);
-    return res.status(401).json({ message: 'Token invalide ou expiré.' });
-  }
-};
-
-// Endpoint pour récupérer les messages de l'utilisateur
-app.get('/api/user/requests', authenticateUser, async (req, res) => {
-  console.log('Utilisateur authentifié:', req.user); // Log pour vérifier `req.user`
-  const { id: user_id } = req.user;
-
-  try {
-    const result = await pool.query(
-      'SELECT * FROM user_messages WHERE user_id = $1 ORDER BY created_at DESC',
-      [user_id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Aucun message trouvé pour cet utilisateur.' });
-    }
-
-    res.status(200).json(result.rows);
-  } catch (error) {
-    console.error('Erreur lors de la récupération des messages:', error);
-    res.status(500).json({ message: 'Erreur serveur lors de la récupération des messages.' });
+    console.error('Erreur lors de la récupération des requêtes:', error);
+    res.status(500).send(`Erreur serveur: ${error.message}`);
   }
 });
 
 // Endpoint pour voir un message spécifique
-app.get('/api/requests/:id', authenticateUser, async (req, res) => {
+app.get('/api/requests/:id', async (req, res) => {
   const { id } = req.params;
-  const { id: user_id } = req.user; // ID de l'utilisateur connecté
-
   try {
-    const result = await pool.query('SELECT * FROM user_messages WHERE id = $1 AND user_id = $2', [id, user_id]);
+    const result = await pool.query('SELECT * FROM user_messages WHERE id = $1', [id]);
     if (result.rows.length > 0) {
       res.json(result.rows[0]);
     } else {
-      res.status(404).send('Requête non trouvée ou vous n\'avez pas la permission de voir ce message.');
+      res.status(404).send('Requête non trouvée');
     }
   } catch (error) {
     console.error('Erreur lors de la récupération de la requête:', error);
@@ -1774,104 +1719,68 @@ app.get('/api/requests/:id', authenticateUser, async (req, res) => {
   }
 });
 
-// API pour récupérer les réponses associées à un message
-app.get('/api/requests/:id/responses', authenticateUser, async (req, res) => {
-  const { id } = req.params;
-  const { id: user_id } = req.user;
+// Endpoint pour répondre à un message
+app.put('/api/requests/:id/respond', async (req, res) => {
+  const requestId = req.params.id;
+  const { response } = req.body;
 
   try {
-    // Vérifie que le message appartient bien à l'utilisateur
-    const messageResult = await pool.query(
-      'SELECT * FROM user_messages WHERE id = $1 AND user_id = $2',
-      [id, user_id]
+    const result = await pool.query(
+      'UPDATE user_messages SET response = $1, status = $2, response_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *',
+      [response, 'Répondu', requestId]
     );
 
-    if (messageResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Message non trouvé' });
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Requête non trouvée' });
     }
 
-    // Vérifie s'il y a une réponse directe dans le même enregistrement
-    const message = messageResult.rows[0];
-    const response = message.response 
-      ? [{
-          id: message.id + '_response',
-          message: message.response,
-          created_at: message.response_at,
-          status: message.status
-        }]
-      : [];
-
-    res.status(200).json(response);
-  } catch (error) {
-    console.error('Erreur:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    res.status(200).json(result.rows[0]);
+  } catch (err) {
+    console.error('Erreur lors de l\'envoi de la réponse:', err);
+    res.status(500).json({ message: "Erreur lors de l'envoi de la réponse." });
   }
 });
 
 // Endpoint pour supprimer un message
-app.delete('/api/requests/:id', authenticateUser, async (req, res) => {
+app.delete('/api/requests/:id', async (req, res) => {
   const { id } = req.params;
-  const { id: user_id } = req.user;
 
   try {
-    // Vérifie que le message appartient bien à l'utilisateur
-    const messageResult = await pool.query(
-      'SELECT * FROM user_messages WHERE id = $1 AND user_id = $2',
-      [id, user_id]
-    );
+    const result = await pool.query('DELETE FROM user_messages WHERE id = $1 RETURNING *', [id]);
 
-    if (messageResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Message non trouvé ou vous n\'avez pas la permission de supprimer ce message.' });
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Requête non trouvée' });
     }
 
-    // Supprime le message
-    const deleteResult = await pool.query(
-      'DELETE FROM user_messages WHERE id = $1 RETURNING *',
-      [id]
-    );
-
-    res.status(200).json(deleteResult.rows[0]);
+    res.status(200).json(result.rows[0]);
   } catch (error) {
     console.error('Erreur lors de la suppression du message:', error);
-    res.status(500).send(`Erreur serveur: ${error.message}`);
+    res.status(500).send('Erreur serveur');
   }
 });
-
 // Endpoint pour modifier un message
-app.put('/api/requests/:id', authenticateUser, async (req, res) => {
-  const { id } = req.params; // ID du message à modifier
-  const { message } = req.body; // Nouveau contenu du message
-  const { id: user_id } = req.user; // ID de l'utilisateur connecté (extraite du token JWT)
+app.put('/api/requests/:id', async (req, res) => {
+  const { id } = req.params;
+  const { message } = req.body;
 
   try {
-    // Vérifie que le message appartient bien à l'utilisateur
-    const messageResult = await pool.query(
-      'SELECT * FROM user_messages WHERE id = $1 AND user_id = $2',
-      [id, user_id]
+    const result = await pool.query(
+      'UPDATE user_messages SET message = $1 WHERE id = $2 RETURNING *',
+      [message, id]
     );
 
-    if (messageResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Message non trouvé ou vous n\'avez pas la permission de modifier ce message.' });
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Requête non trouvée' });
     }
 
-    // Met à jour le message
-    const updateResult = await pool.query(
-      'UPDATE user_messages SET message = $1 WHERE id = $2 AND user_id = $3 RETURNING *',
-      [message, id, user_id]
-    );
-
-    if (updateResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Échec de la mise à jour du message.' });
-    }
-
-    res.status(200).json(updateResult.rows[0]);
+    res.status(200).json(result.rows[0]);
   } catch (error) {
     console.error('Erreur lors de la modification du message:', error);
-    res.status(500).json({ message: `Erreur serveur: ${error.message}` });
+    res.status(500).send('Erreur serveur');
   }
 });
 // Endpoint pour récupérer les messages avec pagination
-app.get('/api/requests',  async (req, res) => {
+app.get('/api/requests', async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
   const offset = (page - 1) * limit;
 
@@ -1908,6 +1817,7 @@ app.put('/api/requests/:id/respond', async (req, res) => {
     res.status(500).json({ message: "Erreur lors de l'envoi de la réponse." });
   }
 });
+
 
 app.listen(port, () => {
   console.log(`Serveur à l'écoute sur http://localhost:${port}`);
