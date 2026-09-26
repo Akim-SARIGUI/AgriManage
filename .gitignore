@@ -1,24 +1,36 @@
-# Nuxt dev/build outputs
+# Dependencies
+node_modules
+
+# Builds / caches
+.turbo
 .output
 .data
 .nuxt
 .nitro
 .cache
 dist
-
-# Node dependencies
-node_modules
+coverage
 
 # Logs
 logs
 *.log
 
-# Misc
-.DS_Store
-.fleet
-.idea
-
-# Local env files
+# Env
 .env
 .env.*
 !.env.example
+
+# IDE / OS
+.DS_Store
+.fleet
+.idea
+*.swp
+
+# Prisma
+packages/database/prisma/*.db
+packages/database/prisma/*.db-journal
+
+# Misc
+.vscode/*
+!.vscode/settings.json
+*.tsbuildinfo

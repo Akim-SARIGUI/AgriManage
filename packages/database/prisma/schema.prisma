@@ -1,0 +1,244 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum StockType {
+  SEED
+  FERTILIZER
+  PESTICIDE
+  PRODUCT
+}
+
+enum StockMovementLevel {
+  IN
+  OUT
+}
+
+enum SupportStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum NotificationType {
+  LOW_STOCK
+  HARVEST_REMINDER
+  ACTIVITY_REMINDER
+  SUPPORT_REPLY
+  SYSTEM
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  fullName      String    @map("full_name")
+  role          Role      @default(USER)
+  loginAttempts Int       @default(0) @map("login_attempts")
+  lockedUntil   DateTime? @map("locked_until")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  parcels        Parcel[]
+  stocks         Stock[]
+  stockHistory   StockHistory[]
+  revenues       Revenue[]
+  expenses       Expense[]
+  supportTickets SupportTicket[]
+  refreshTokens  RefreshToken[]
+  notifications  Notification[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @map("token_hash")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model PasswordReset {
+  id             String    @id @default(uuid())
+  email          String
+  resetCode      String    @map("reset_code")
+  expiresAt      DateTime  @map("expires_at")
+  failedAttempts Int       @default(0) @map("failed_attempts")
+  lastAttempt    DateTime? @map("last_attempt")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@index([email])
+  @@map("password_resets")
+}
+
+model Parcel {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  size          Float?
+  latitude      Float?
+  longitude     Float?
+  locationLabel String?  @map("location_label")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  crops Crop[]
+
+  @@index([userId])
+  @@map("parcels")
+}
+
+model Crop {
+  id           String    @id @default(uuid())
+  parcelId     String    @map("parcel_id")
+  parcel       Parcel    @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  name         String
+  plantingDate DateTime? @map("planting_date")
+  harvestDate  DateTime? @map("harvest_date")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  activities Activity[]
+
+  @@index([parcelId])
+  @@map("crops")
+}
+
+model Activity {
+  id        String    @id @default(uuid())
+  cropId    String    @map("crop_id")
+  crop      Crop      @relation(fields: [cropId], references: [id], onDelete: Cascade)
+  name      String
+  date      DateTime?
+  details   String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  interventions Intervention[]
+
+  @@index([cropId])
+  @@map("activities")
+}
+
+model Intervention {
+  id         String   @id @default(uuid())
+  activityId String   @map("activity_id")
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  note       String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([activityId])
+  @@map("interventions")
+}
+
+model Stock {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  quantity  Float
+  unit      String
+  type      StockType
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId, type])
+  @@map("stocks")
+}
+
+model StockHistory {
+  id        String             @id @default(uuid())
+  userId    String             @map("user_id")
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      StockType
+  name      String
+  quantity  Float
+  unit      String
+  level     StockMovementLevel
+  date      DateTime
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+
+  @@index([userId, type])
+  @@map("stock_history")
+}
+
+model Revenue {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Float
+  source    String
+  date      DateTime
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("revenues")
+}
+
+model Expense {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Float
+  category  String
+  date      DateTime
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("expenses")
+}
+
+model SupportTicket {
+  id          String        @id @default(uuid())
+  userId      String?       @map("user_id")
+  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name        String
+  email       String
+  message     String
+  status      SupportStatus @default(OPEN)
+  response    String?
+  respondedAt DateTime?     @map("responded_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@map("support_tickets")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String           @map("user_id")
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  dedupeKey String           @map("dedupe_key")
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
